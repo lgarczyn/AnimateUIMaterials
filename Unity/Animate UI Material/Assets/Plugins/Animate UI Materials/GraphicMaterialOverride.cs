@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 namespace Plugins.Animate_UI_Materials
 {
+  [AddComponentMenu("UI/Animate UI Material/GraphicMaterialOverride")]
   public class GraphicMaterialOverride : MonoBehaviour, IMaterialModifier
   {
     /// <summary>

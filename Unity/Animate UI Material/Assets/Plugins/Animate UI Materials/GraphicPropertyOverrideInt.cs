@@ -10,6 +10,7 @@ namespace Plugins.Animate_UI_Materials
   ///   Added to a child of the Graphic element
   ///   This variant only applies to Int properties
   /// </summary>
+  [AddComponentMenu("UI/Animate UI Material/GraphicPropertyOverrideInt")]
   public class GraphicPropertyOverrideInt : GraphicPropertyOverride<int>
   {
     /// <summary>

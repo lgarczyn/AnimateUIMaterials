@@ -10,6 +10,7 @@ namespace Plugins.Animate_UI_Materials
   ///   Added to a child of the Graphic element
   ///   This variant only applies to Range properties
   /// </summary>
+  [AddComponentMenu("UI/Animate UI Material/GraphicPropertyOverrideRange")]
   public class GraphicPropertyOverrideRange : GraphicPropertyOverride<float>
   {
     /// <summary>

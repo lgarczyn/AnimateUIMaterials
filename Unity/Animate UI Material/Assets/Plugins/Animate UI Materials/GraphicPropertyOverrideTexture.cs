@@ -10,6 +10,7 @@ namespace Plugins.Animate_UI_Materials
   ///   Added to a child of the Graphic element
   ///   This variant only applies to Texture properties
   /// </summary>
+  [AddComponentMenu("UI/Animate UI Material/GraphicPropertyOverrideTexture")]
   public class GraphicPropertyOverrideTexture : GraphicPropertyOverride<Texture>
   {
     public override PropertyType GetPropertyType()

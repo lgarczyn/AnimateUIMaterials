@@ -10,6 +10,7 @@ namespace Plugins.Animate_UI_Materials
   ///   Added to a child of the Graphic element
   ///   This variant only applies to Color properties
   /// </summary>
+  [AddComponentMenu("UI/Animate UI Material/GraphicPropertyOverrideColor")]
   public class GraphicPropertyOverrideColor : GraphicPropertyOverride<Color>
   {
     public override PropertyType GetPropertyType()

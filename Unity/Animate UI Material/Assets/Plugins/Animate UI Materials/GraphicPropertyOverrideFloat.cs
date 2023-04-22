@@ -10,6 +10,7 @@ namespace Plugins.Animate_UI_Materials
   ///   Added to a child of the Graphic element
   ///   This variant only applies to Float properties
   /// </summary>
+  [AddComponentMenu("UI/Animate UI Material/GraphicPropertyOverrideFloat")]
   public class GraphicPropertyOverrideFloat : GraphicPropertyOverride<float>
   {
     /// <summary>

@@ -10,6 +10,7 @@ namespace Plugins.Animate_UI_Materials
   ///   Added to a child of the Graphic element
   ///   This variant only applies to Vector properties
   /// </summary>
+  [AddComponentMenu("UI/Animate UI Material/GraphicPropertyOverrideVector")]
   public class GraphicPropertyOverrideVector : GraphicPropertyOverride<Vector4>
   {
     public override PropertyType GetPropertyType()
