@@ -13,22 +13,11 @@ namespace Plugins.Animate_UI_Materials.Editor
   [CustomEditor(typeof(GraphicMaterialOverride), true)]
   public class GraphicMaterialOverrideEditor : UnityEditor.Editor
   {
+    /// <summary>
+    /// The scroll position in the modifiers ScrollView
+    /// Usually not needed, but good to have
+    /// </summary>
     Vector2 _scrollPosition;
-
-    // Get all the 
-    static List<IMaterialPropertyModifier> GetPropertyModifiers(Transform parent)
-    {
-      List<IMaterialPropertyModifier> modifiers = new();
-      List<IMaterialPropertyModifier> modifiersInOneChild = new();
-
-      foreach (Transform child in parent)
-      {
-        child.GetComponents(modifiersInOneChild);
-        modifiers.AddRange(modifiersInOneChild);
-      }
-
-      return modifiers;
-    }
 
     /// <summary>
     ///   Override the reset context menu to implement the reset function
