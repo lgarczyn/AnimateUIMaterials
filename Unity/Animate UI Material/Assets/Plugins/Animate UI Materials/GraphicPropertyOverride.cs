@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Plugins.Animate_UI_Materials
 {
@@ -36,12 +37,20 @@ namespace Plugins.Animate_UI_Materials
     }
     
 #if UNITY_EDITOR // if in the unity editor, include unity editor callbacks
-    // On editor change, mark as dirty
+    /// <summary>
+    /// On editor change, mark as dirty
+    /// </summary>
     void OnValidate()
     {
       SetMaterialDirty(true);
     }
 #endif
+    
+    /// <summary>
+    /// Try to retrieve and apply the default property value
+    /// If the source material cannot be found, reset to sensible defaults
+    /// </summary>
+    public abstract void ResetPropertyToDefault();
 
     /// <summary>
     /// Get the shader property type enum
@@ -79,7 +88,7 @@ namespace Plugins.Animate_UI_Materials
       set
       {
         propertyName = value;
-        SetMaterialDirty();
+        SetMaterialDirty(true);
       }
     }
   }
@@ -139,5 +148,48 @@ namespace Plugins.Animate_UI_Materials
         SetMaterialDirty();
       }
     }
+    
+#if UNITY_EDITOR // if in the unity editor, include unity editor callbacks
+    /// <summary>
+    /// On component reset, set value to default
+    /// </summary>
+    void Reset()
+    {
+      ResetPropertyToDefault();
+    }
+
+#endif
+
+    /// <summary>
+    /// Try to retrieve and apply the default property value
+    /// If the source material cannot be found, reset to sensible defaults
+    /// </summary>
+    public override void ResetPropertyToDefault()
+    {
+      // Try to get the associated Graphic component
+      Graphic graphic = transform.parent.GetComponent<Graphic>();
+      // If successful, get the material
+      Material material = graphic ? graphic.material : null;
+      // init the reset value to default
+      T value = default;
+      bool gotDefaultValue = false;
+
+      // If material was received, try to get the default value from the material
+      if (material) gotDefaultValue = GetDefaultValue(material, out value);
+      
+      // Log a warning if we failed
+      if (!gotDefaultValue) Debug.LogWarning("Could not retrieve material default value", this);
+
+      // Set current value to what we managed to retrieve, and update
+      PropertyValue = value;
+    }
+
+    /// <summary>
+    /// Retrieve the default property value from the source material
+    /// </summary>
+    /// <param name="material">The source material</param>
+    /// <param name="defaultValue">The value from the material</param>
+    /// <returns>True if the value could be retrieved</returns>
+    public abstract bool GetDefaultValue(Material material, out T defaultValue);
   }
 }

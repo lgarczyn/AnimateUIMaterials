@@ -26,5 +26,19 @@ namespace Plugins.Animate_UI_Materials
     {
       material.SetVector(PropertyId, propertyValue);
     }
+
+    /// <summary>
+    /// Retrieve the default Vector value from the source material
+    /// </summary>
+    /// <param name="material">The source material</param>
+    /// <param name="defaultValue">The Vector value from the material</param>
+    /// <returns>True if the value could be retrieved</returns>
+    public override bool GetDefaultValue(Material material, out Vector4 defaultValue)
+    {
+      bool hasProperty = material.HasVector(PropertyId);
+      if (hasProperty) defaultValue = material.GetVector(PropertyId);
+      else defaultValue = default;
+      return hasProperty;
+    }
   }
 }

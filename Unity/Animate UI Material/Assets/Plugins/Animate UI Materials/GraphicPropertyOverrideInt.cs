@@ -30,5 +30,19 @@ namespace Plugins.Animate_UI_Materials
     {
       material.SetInteger(PropertyId, propertyValue);
     }
+
+    /// <summary>
+    /// Retrieve the default int value from the source material
+    /// </summary>
+    /// <param name="material">The source material</param>
+    /// <param name="defaultValue">The int value from the material</param>
+    /// <returns>True if the value could be retrieved</returns>
+    public override bool GetDefaultValue(Material material, out int defaultValue)
+    {
+      bool hasProperty = material.HasInteger(PropertyId);
+      if (hasProperty) defaultValue = material.GetInteger(PropertyId);
+      else defaultValue = default;
+      return hasProperty;
+    }
   }
 }

@@ -30,6 +30,28 @@ namespace Plugins.Animate_UI_Materials.Editor
       return modifiers;
     }
 
+    /// <summary>
+    ///   Override the reset context menu to implement the reset function
+    ///   Needed instead of "MonoBehavior.Reset" on GraphicMaterialOverride because we need to record an Undo
+    /// </summary>
+    [MenuItem("CONTEXT/GraphicMaterialOverride/Reset")]
+    static void ResetMaterialModifiers(MenuCommand b)
+    {
+      GraphicMaterialOverride materialOverride = (GraphicMaterialOverride)b.context;
+      if (!materialOverride) return;
+
+      List<IMaterialPropertyModifier> modifiers = materialOverride.GetModifiers().ToList();
+
+      Object[] modifiersAsObjects = modifiers.Select(m => (Object)m).ToArray();
+      Undo.RecordObjects(modifiersAsObjects, "Reset material modifiers");
+
+      foreach (IMaterialPropertyModifier modifier in modifiers)
+      {
+        modifier.ResetPropertyToDefault();
+        PrefabUtility.RecordPrefabInstancePropertyModifications((Object)modifier);
+      }
+    }
+
     public override void OnInspectorGUI()
     {
       DrawDefaultInspector();
@@ -83,11 +105,71 @@ namespace Plugins.Animate_UI_Materials.Editor
         DrawModifierReadOnlyValues(modifier);
         DrawModifierValue(modifier);
         EditorGUILayout.EndHorizontal();
+        DrawModifierContextMenu(modifier);
       }
 
       EditorGUILayout.EndScrollView();
       // Reset the label width
       EditorGUIUtility.labelWidth = 0;
+    }
+
+    void DrawModifierContextMenu(IMaterialPropertyModifier modifier)
+    {
+      if (Event.current.type == EventType.MouseDown
+          && Event.current.button == 1
+          && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+      {
+        MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
+        GenericMenu menu = new();
+        if (modifierComponent.isActiveAndEnabled)
+        {
+          menu.AddItem(new GUIContent("Disable"), false, () => ModifierSetActive(modifierComponent, false));
+        }
+        else
+        {
+          menu.AddItem(new GUIContent("Enable"), false, () => ModifierSetActive(modifierComponent, true));
+        }
+        menu.AddItem(new GUIContent("Reset"), false, () => ResetModifier(modifierComponent));
+        menu.AddItem(new GUIContent("Delete"), false, () => DeleteModifier(modifierComponent));
+        menu.ShowAsContext();
+        Event.current.Use();
+      }
+    }
+
+    void ResetModifier(MonoBehaviour modifier)
+    {
+      IMaterialPropertyModifier modifierInterface = (IMaterialPropertyModifier)modifier;
+      Undo.RecordObject(modifier, "Reset modifier component");
+
+      modifierInterface.ResetPropertyToDefault();
+
+      PrefabUtility.RecordPrefabInstancePropertyModifications(modifier);
+    }
+
+    void DeleteModifier(MonoBehaviour modifier)
+    {
+      Undo.DestroyObjectImmediate(modifier.gameObject);
+    }
+
+    void ModifierSetActive(MonoBehaviour modifier, bool isActive)
+    {
+      // Make sure any modifications are properly propagated to unity
+      Undo.RecordObjects(new Object[] { modifier, modifier.gameObject },
+        "Toggled modifier component");
+      // If enabling, set the component and GameObject as active
+      if (isActive)
+      {
+        modifier.enabled = true;
+        modifier.gameObject.SetActive(true);
+      }
+      // If disabling, disable the GameObject only
+      else
+      {
+        modifier.gameObject.SetActive(false);
+      }
+
+      PrefabUtility.RecordPrefabInstancePropertyModifications(modifier);
+      PrefabUtility.RecordPrefabInstancePropertyModifications(modifier.gameObject);
     }
 
     /// <summary>
@@ -102,25 +184,7 @@ namespace Plugins.Animate_UI_Materials.Editor
       // Draw the toggle with limited width
       bool isActive = EditorGUILayout.Toggle(modifierComponent.isActiveAndEnabled, GUILayout.Width(16f));
       // If changes happened
-      if (EditorGUI.EndChangeCheck())
-      {
-        // Make sure any modifications are properly propagated to unity
-        Undo.RecordObjects(new Object[] { modifierComponent, modifierComponent.gameObject },
-          "Toggled modifier component");
-        PrefabUtility.RecordPrefabInstancePropertyModifications(modifierComponent);
-        PrefabUtility.RecordPrefabInstancePropertyModifications(modifierComponent.gameObject);
-        // If enabling, set the component and GameObject as active
-        if (isActive)
-        {
-          modifierComponent.enabled = true;
-          modifierComponent.gameObject.SetActive(true);
-        }
-        // If disabling, disable the GameObject only
-        else
-        {
-          modifierComponent.gameObject.SetActive(false);
-        }
-      }
+      if (EditorGUI.EndChangeCheck()) ModifierSetActive(modifierComponent, isActive);
     }
 
     /// <summary>

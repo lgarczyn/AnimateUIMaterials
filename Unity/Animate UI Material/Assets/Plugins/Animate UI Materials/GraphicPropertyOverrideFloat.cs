@@ -30,5 +30,19 @@ namespace Plugins.Animate_UI_Materials
     {
       material.SetFloat(PropertyId, propertyValue);
     }
+
+    /// <summary>
+    /// Retrieve the default float value from the source material
+    /// </summary>
+    /// <param name="material">The source material</param>
+    /// <param name="defaultValue">The float value from the material</param>
+    /// <returns>True if the value could be retrieved</returns>
+    public override bool GetDefaultValue(Material material, out float defaultValue)
+    {
+      bool hasProperty = material.HasFloat(PropertyId);
+      if (hasProperty) defaultValue = material.GetFloat(PropertyId);
+      else defaultValue = default;
+      return hasProperty;
+    }
   }
 }

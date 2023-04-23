@@ -22,6 +22,12 @@ namespace Plugins.Animate_UI_Materials
     void ApplyModifiedProperty(Material material);
 
     /// <summary>
+    /// Try to retrieve and apply the default property value
+    /// If the source material cannot be found, reset to sensible defaults
+    /// </summary>
+    void ResetPropertyToDefault();
+
+    /// <summary>
     ///   Get the type of the property
     /// </summary>
     ShaderUtil.ShaderPropertyType GetPropertyType();
