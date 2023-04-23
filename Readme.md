@@ -5,7 +5,7 @@
 
 # Introduction
 
-**Animate UI Materials **allows editing and animating materials for a single UI component.
+**Animate UI Materials** allows editing and animating materials for a single UI component.
 
 
 
@@ -20,7 +20,7 @@ You can see such an example in the demo scene.
 
 # Setup
 
-To start, simply add the **GraphicMaterialOverride **component to an UI element, such as an **Image **with a custom **Material**
+To start, simply add the **GraphicMaterialOverride** component to an UI element, such as an **Image** with a custom **Material**
 
 
 
@@ -46,7 +46,7 @@ Two things will happen:
 
 
 
-1. A **new modifier** will be listed in the **GraphicMaterialOverride **component
+1. A **new modifier** will be listed in the **GraphicMaterialOverride** component
 
     
 
@@ -59,7 +59,7 @@ Two things will happen:
 
     You can already **edit the color value**, and the change will only affect the Image component
 
-2. A new gameobject will be created, holding a **GraphicPropertyOverride **component
+2. A new gameobject will be created, holding a **GraphicPropertyOverride** component
 
     
 
@@ -101,7 +101,7 @@ Create a new **AnimationClip**
 ![alt_text](images/image9.png "image_tooltip")
 
 
-Click **Add Property **and select **_Color Override**, then **Graphic Property Override Color**, then **Graphic Property Override Color.Property Value**
+Click **Add Property** and select **_Color Override**, then **Graphic Property Override Color**, then **Graphic Property Override Color.Property Value**
 
 
 
@@ -111,7 +111,7 @@ Click **Add Property **and select **_Color Override**, then **Graphic Property O
 ![alt_text](images/image10.png "image_tooltip")
 
 
-You can now **animate **the value like any other !
+You can now **animate** the value like any other !
 
 
 
