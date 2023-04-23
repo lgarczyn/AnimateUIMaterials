@@ -22,11 +22,6 @@ namespace Plugins.Animate_UI_Materials
     void ApplyModifiedProperty(Material material);
 
     /// <summary>
-    ///   Sends a message to the parent GraphicMaterialOverride to update all modified values
-    /// </summary>
-    void SetMaterialDirty();
-
-    /// <summary>
     ///   Get the type of the property
     /// </summary>
     ShaderUtil.ShaderPropertyType GetPropertyType();

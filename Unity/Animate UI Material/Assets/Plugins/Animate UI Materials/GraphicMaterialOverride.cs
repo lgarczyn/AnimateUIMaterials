@@ -61,6 +61,7 @@ namespace Plugins.Animate_UI_Materials
     /// <summary>
     /// From IMaterialModifier
     /// Receives a material to be modified before display, and returns a new material
+    /// Only called once per frame per Graphic if changed, as Graphic is well optimized
     /// </summary>
     /// <param name="baseMaterial"></param>
     /// <returns>A new material object</returns>
