@@ -47,36 +47,13 @@ Two things will happen:
 
 
 1. A **new modifier** will be listed in the **GraphicMaterialOverride** component
-
-    
-
-
-
-
 ![alt_text](images/image5.png "image_tooltip")
-
-
-
-    You can already **edit the color value**, and the change will only affect the Image component
+You can already **edit the color value**, and the change will only affect the Image component
 
 2. A new gameobject will be created, holding a **GraphicPropertyOverride** component
-
-    
-
-
-
-
 ![alt_text](images/image6.png "image_tooltip")
-
-
-
-
-
 ![alt_text](images/image7.png "image_tooltip")
-
-
-
-	The value displayed here is the exact same as in the **GraphicMaterialComponent**. However this value can also be **animated.**
+The value displayed here is the exact same as in the **GraphicMaterialComponent**. However this value can also be **animated.**
 
 
 # Animation
