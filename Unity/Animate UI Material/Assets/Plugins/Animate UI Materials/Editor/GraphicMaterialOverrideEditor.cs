@@ -113,6 +113,10 @@ namespace Plugins.Animate_UI_Materials.Editor
       EditorGUIUtility.labelWidth = 0;
     }
 
+    /// <summary>
+    /// Draw the context menu for one modifier line
+    /// </summary>
+    /// <param name="modifier"></param>
     void DrawModifierContextMenu(IMaterialPropertyModifier modifier)
     {
       if (Event.current.type == EventType.MouseDown
@@ -136,6 +140,10 @@ namespace Plugins.Animate_UI_Materials.Editor
       }
     }
 
+    /// <summary>
+    /// Reset a modifier object to the default material value and record an undo
+    /// </summary>
+    /// <param name="modifier"></param>
     void ResetModifier(MonoBehaviour modifier)
     {
       IMaterialPropertyModifier modifierInterface = (IMaterialPropertyModifier)modifier;
@@ -146,11 +154,21 @@ namespace Plugins.Animate_UI_Materials.Editor
       PrefabUtility.RecordPrefabInstancePropertyModifications(modifier);
     }
 
+    /// <summary>
+    /// Delete the GameObject of a modifier and record an Undo
+    /// </summary>
+    /// <param name="modifier"></param>
     void DeleteModifier(MonoBehaviour modifier)
     {
       Undo.DestroyObjectImmediate(modifier.gameObject);
     }
 
+    /// <summary>
+    /// Set the active state of a modifier and its GameObject
+    /// Records an undo
+    /// </summary>
+    /// <param name="modifier"></param>
+    /// <param name="isActive"></param>
     void ModifierSetActive(MonoBehaviour modifier, bool isActive)
     {
       // Make sure any modifications are properly propagated to unity
