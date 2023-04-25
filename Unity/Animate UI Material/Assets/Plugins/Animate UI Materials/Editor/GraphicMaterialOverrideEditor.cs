@@ -75,58 +75,107 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// <param name="modifiers"></param>
     void DisplayModifiers(List<IMaterialPropertyModifier> modifiers)
     {
-      EditorGUILayout.BeginScrollView(_scrollPosition);
-
       EditorGUILayout.LabelField("Modifiers");
 
       if (modifiers.Count == 0)
         EditorGUILayout.HelpBox("Select a value from the dropdown to add a property modifier", MessageType.Info);
 
-      // Change the label width to allow a float slider with a small width
-      EditorGUIUtility.labelWidth = 16f;
-
+      using GUILayout.ScrollViewScope scrollViewScope = new(_scrollPosition);
+      using GUILayout.HorizontalScope horizontalScope = new();
+      
       // Draw every active modifiers
-      foreach (IMaterialPropertyModifier modifier in modifiers)
-      {
-        // Start the horizontal group
-        EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(false));
-        DrawModifierToggle(modifier);
-        DrawModifierReadOnlyValues(modifier);
-        DrawModifierValue(modifier);
-        EditorGUILayout.EndHorizontal();
-        DrawModifierContextMenu(modifier);
-      }
+      // Draw the toggles column
+      ForEachParameterVertical(modifiers, DrawModifierToggle, 16f);
+      // Draw the name columns
+      ForEachParameterVertical(modifiers, DrawModifierReadOnlyValues, 0f);
 
-      EditorGUILayout.EndScrollView();
-      // Reset the label width
-      EditorGUIUtility.labelWidth = 0;
+      // Draw the value toggles
+      // Change the label width to allow a float slider with a small width
+      ForEachParameterVertical(modifiers, DrawModifierValue, 300f, 16f);
+      
+      // Draw the menu button
+      ForEachParameterVertical(modifiers, DrawModifierKebabMenu, 16f);
     }
 
     /// <summary>
-    /// Draw the context menu for one modifier line
+    /// Begin a vertical group, and call a draw function on each modifier
+    /// </summary>
+    /// <param name="modifiers">The modifiers to draw</param>
+    /// <param name="action">The draw function for a modifier property</param>
+    /// <param name="width">The width of the column</param>
+    /// <param name="labelWidth">The width of labels in the column</param>
+    static void ForEachParameterVertical(
+      List<IMaterialPropertyModifier> modifiers,
+      Action<IMaterialPropertyModifier> action,
+      float width = 150f,
+      float labelWidth = 0f
+      )
+    {
+      EditorGUIUtility.labelWidth = labelWidth;
+      using EditorGUILayout.VerticalScope scope = new(GUILayout.Width(width));
+      foreach (var param in modifiers) action(param);
+      // Reset the label width
+      EditorGUIUtility.labelWidth = 0f;
+    }
+
+    /// <summary>
+    /// If used right clicked, the context menu for one modifier
     /// </summary>
     /// <param name="modifier"></param>
-    void DrawModifierContextMenu(IMaterialPropertyModifier modifier)
+    void CaptureRightClick(IMaterialPropertyModifier modifier)
     {
+      // Don't capture event if sliders are active
+      if (GUIUtility.hotControl != 0) return;
       if (Event.current.type == EventType.MouseDown
           && Event.current.button == 1
           && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
       {
-        MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
-        GenericMenu menu = new();
-        if (modifierComponent.isActiveAndEnabled)
-        {
-          menu.AddItem(new GUIContent("Disable"), false, () => ModifierSetActive(modifierComponent, false));
-        }
-        else
-        {
-          menu.AddItem(new GUIContent("Enable"), false, () => ModifierSetActive(modifierComponent, true));
-        }
-        menu.AddItem(new GUIContent("Reset"), false, () => ResetModifier(modifierComponent));
-        menu.AddItem(new GUIContent("Delete"), false, () => DeleteModifier(modifierComponent));
-        menu.ShowAsContext();
+        DrawModifierContextMenu(modifier);
         Event.current.Use();
       }
+    }
+
+    // The cached style of the kebab menu button
+    GUIStyle _kebabMenuStyle;
+
+    /// <summary>
+    /// Draw a button that activate the context menu
+    /// </summary>
+    /// <param name="modifier"></param>
+    void DrawModifierKebabMenu(IMaterialPropertyModifier modifier)
+    {
+      if (_kebabMenuStyle == null)
+      {
+        _kebabMenuStyle = new GUIStyle(GUI.skin.GetStyle("PaneOptions"));
+        // Force the height of the button
+        _kebabMenuStyle.fixedHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+      }
+
+      if (GUILayout.Button("", _kebabMenuStyle))
+      {
+        DrawModifierContextMenu(modifier);
+      }
+    }
+
+    /// <summary>
+    /// Draw the context menu for one modifier
+    /// </summary>
+    /// <param name="modifier"></param>
+    void DrawModifierContextMenu(IMaterialPropertyModifier modifier)
+    {
+      MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
+      GenericMenu menu = new();
+      if (modifierComponent.isActiveAndEnabled)
+      {
+        menu.AddItem(new GUIContent("Disable"), false, () => ModifierSetActive(modifierComponent, false));
+      }
+      else
+      {
+        menu.AddItem(new GUIContent("Enable"), false, () => ModifierSetActive(modifierComponent, true));
+      }
+      menu.AddItem(new GUIContent("Reset"), false, () => ResetModifier(modifierComponent));
+      menu.AddItem(new GUIContent("Delete"), false, () => DeleteModifier(modifierComponent));
+      menu.ShowAsContext();
     }
 
     /// <summary>
@@ -201,14 +250,19 @@ namespace Plugins.Animate_UI_Materials.Editor
     void DrawModifierReadOnlyValues(IMaterialPropertyModifier modifier)
     {
       MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
-      // Disable read-only fields, as they should not be modified here
-      EditorGUI.BeginDisabledGroup(true);
-      // Create a "link" field to the modifier object
-      EditorGUILayout.ObjectField(modifierComponent, typeof(IMaterialPropertyModifier), true);
-      // Display the modifier property name
-      EditorGUILayout.TextField(modifier.PropertyName);
-      // Stop the disabled group
-      EditorGUI.EndDisabledGroup();
+      // In a scope so that CaptureRightClick can get the correct rect
+      {
+        // Disable read-only fields, as they should not be modified here
+        using EditorGUI.DisabledScope disabledScope = new(true);
+        // Start a horizontal scope
+        using EditorGUILayout.HorizontalScope horizontalScope = new();
+        // Create a "link" field to the modifier object
+        EditorGUILayout.ObjectField(modifierComponent, typeof(IMaterialPropertyModifier), true);
+        // Display the modifier property name
+        EditorGUILayout.TextField(modifier.PropertyName);
+      }
+      // Capture right clicks over this area
+      CaptureRightClick(modifier);
     }
 
     /// <summary>
