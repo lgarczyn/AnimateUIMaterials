@@ -165,7 +165,7 @@ namespace Plugins.Animate_UI_Materials.Editor
     {
       MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
       GenericMenu menu = new();
-      if (modifierComponent.isActiveAndEnabled)
+      if (IsActiveSelf(modifierComponent))
       {
         menu.AddItem(new GUIContent("Disable"), false, () => ModifierSetActive(modifierComponent, false));
       }
@@ -229,6 +229,16 @@ namespace Plugins.Animate_UI_Materials.Editor
     }
 
     /// <summary>
+    /// Returns true if a component and its gameobject are active 
+    /// </summary>
+    /// <param name="component"></param>
+    /// <returns></returns>
+    static bool IsActiveSelf(MonoBehaviour component)
+    {
+      return component.enabled && component.gameObject.activeSelf;
+    }
+
+    /// <summary>
     ///   Draw a toggle to enable or disable the target modifier component
     /// </summary>
     /// <param name="modifier">The modifier component</param>
@@ -238,7 +248,7 @@ namespace Plugins.Animate_UI_Materials.Editor
       // Start checking for changes
       EditorGUI.BeginChangeCheck();
       // Draw the toggle with limited width
-      bool isActive = EditorGUILayout.Toggle(modifierComponent.isActiveAndEnabled, GUILayout.Width(16f));
+      bool isActive = EditorGUILayout.Toggle(IsActiveSelf(modifierComponent), GUILayout.Width(16f));
       // If changes happened
       if (EditorGUI.EndChangeCheck()) ModifierSetActive(modifierComponent, isActive);
     }
