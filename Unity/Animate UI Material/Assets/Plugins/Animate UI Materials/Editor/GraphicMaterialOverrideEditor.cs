@@ -77,9 +77,6 @@ namespace Plugins.Animate_UI_Materials.Editor
     {
       EditorGUILayout.LabelField("Modifiers");
 
-      if (modifiers.Count == 0)
-        EditorGUILayout.HelpBox("Select a value from the dropdown to add a property modifier", MessageType.Info);
-
       using GUILayout.ScrollViewScope scrollViewScope = new(_scrollPosition);
       using GUILayout.HorizontalScope horizontalScope = new();
       
@@ -229,7 +226,7 @@ namespace Plugins.Animate_UI_Materials.Editor
     }
 
     /// <summary>
-    /// Returns true if a component and its gameobject are active 
+    /// Returns true if a component and its GameObject are active 
     /// </summary>
     /// <param name="component"></param>
     /// <returns></returns>
@@ -364,9 +361,19 @@ namespace Plugins.Animate_UI_Materials.Editor
 
       // Display a creation popup
       Material material = GetTargetMaterial();
-      List<ShaderPropertyInfo> properties = ShaderPropertyInfo.GetMaterialProperties(material)
-        .Where(p => !namesAlreadyUsed.Contains(p.name))
-        .ToList();
+      List<ShaderPropertyInfo> allProperties = ShaderPropertyInfo.GetMaterialProperties(material);
+      List<ShaderPropertyInfo> properties = allProperties
+                                            .Where(p => !namesAlreadyUsed.Contains(p.name))
+                                            .ToList();
+
+      if (allProperties.Count == 0)
+      {
+        EditorGUILayout.HelpBox("No available properties on the material", MessageType.Info);
+      }
+      else if (properties.Count > 0 && modifiers.Count == 0)
+      {
+        EditorGUILayout.HelpBox("Select a value from the dropdown to add a property modifier", MessageType.Info);
+      }
 
       string[] propertyNames = properties.Select(p => p.name).ToArray();
       int selectedIndex = EditorGUILayout.Popup(new GUIContent("Add Override"), -1, propertyNames);
