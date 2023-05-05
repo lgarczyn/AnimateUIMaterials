@@ -1,10 +1,7 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Plugins.Animate_UI_Materials
 {
-  using PropertyType = ShaderUtil.ShaderPropertyType;
-
   /// <summary>
   ///   Used in with GraphicMaterialOverride to modify a material without creating a variant
   ///   Added to a child of the Graphic element
@@ -13,11 +10,6 @@ namespace Plugins.Animate_UI_Materials
   [AddComponentMenu("UI/Animate UI Material/GraphicPropertyOverrideVector")]
   public class GraphicPropertyOverrideVector : GraphicPropertyOverride<Vector4>
   {
-    public override PropertyType GetPropertyType()
-    {
-      return PropertyType.Vector;
-    }
-
     /// <summary>
     ///   Apply the modified property to the material
     /// </summary>

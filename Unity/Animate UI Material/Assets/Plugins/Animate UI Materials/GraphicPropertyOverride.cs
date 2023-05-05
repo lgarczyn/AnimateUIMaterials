@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEditor;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Plugins.Animate_UI_Materials
 {
-  using PropertyType = ShaderUtil.ShaderPropertyType;
-
   /// <summary>
   ///   Used in combination with GraphicMaterialOverride to modify and animate shader properties
   ///   The base class is used for the shared Editor script, and reacting to OnValidate events
@@ -19,6 +15,7 @@ namespace Plugins.Animate_UI_Materials
     /// The name of the shader property, serialized
     /// </summary>
     [SerializeField] protected string propertyName;
+
     /// <summary>
     /// The id of the shader property
     /// </summary>
@@ -35,7 +32,7 @@ namespace Plugins.Animate_UI_Materials
     {
       SetMaterialDirty();
     }
-    
+
 #if UNITY_EDITOR // if in the unity editor, include unity editor callbacks
     /// <summary>
     /// On editor change, mark as dirty
@@ -45,19 +42,12 @@ namespace Plugins.Animate_UI_Materials
       SetMaterialDirty(true);
     }
 #endif
-    
+
     /// <summary>
     /// Try to retrieve and apply the default property value
     /// If the source material cannot be found, reset to sensible defaults
     /// </summary>
     public abstract void ResetPropertyToDefault();
-
-    /// <summary>
-    /// Get the shader property type enum
-    /// Overriden by non-abstract GraphicPropertyOverride components
-    /// </summary>
-    /// <returns>the ShaderPropertyType of the property, as defined by ShaderUtil </returns>
-    public abstract PropertyType GetPropertyType();
 
     /// <summary>
     /// Set the material as dirty
@@ -100,7 +90,7 @@ namespace Plugins.Animate_UI_Materials
   /// Adds a SerializedField of type T
   /// </summary>
   /// <typeparam name="T"></typeparam>
-  public abstract class GraphicPropertyOverride<T>: GraphicPropertyOverride
+  public abstract class GraphicPropertyOverride<T> : GraphicPropertyOverride
   {
     /// <summary>
     /// The serialized value, modified by the inspector or the animator
@@ -116,7 +106,7 @@ namespace Plugins.Animate_UI_Materials
     /// <summary>
     /// Checks if any changes happened just before rendering
     /// Can be removed to optimize, since OnDidApplyAnimationProperties is doing the heavy lifting
-    /// But OnDidApplyAnimationProperties is undocumented, and will potentially change silently in the furue
+    /// But OnDidApplyAnimationProperties is undocumented, and will potentially change silently in the future
     /// </summary>
     void LateUpdate()
     {
@@ -125,7 +115,7 @@ namespace Plugins.Animate_UI_Materials
       _previousValue = propertyValue;
       SetMaterialDirty();
     }
-    
+
     /// <summary>
     /// Called by the animator system when a value is modified
     /// </summary>
@@ -148,7 +138,7 @@ namespace Plugins.Animate_UI_Materials
         SetMaterialDirty();
       }
     }
-    
+
 #if UNITY_EDITOR // if in the unity editor, include unity editor callbacks
     /// <summary>
     /// On component reset, set value to default
@@ -176,7 +166,7 @@ namespace Plugins.Animate_UI_Materials
 
       // If material was received, try to get the default value from the material
       if (material) gotDefaultValue = GetDefaultValue(material, out value);
-      
+
       // Log a warning if we failed
       if (!gotDefaultValue) Debug.LogWarning("Could not retrieve material default value", this);
 

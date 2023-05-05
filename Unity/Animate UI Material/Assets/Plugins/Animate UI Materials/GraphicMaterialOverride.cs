@@ -49,6 +49,7 @@ namespace Plugins.Animate_UI_Materials
           }
         }
       }
+
       // Ensure no ref is kept
       _modifiers.Clear();
     }
@@ -73,9 +74,9 @@ namespace Plugins.Animate_UI_Materials
       // Create a child material of the original
       // This allows any later modifications to the original material to be preserved 
       Material modifiedMaterial = new Material(baseMaterial.shader);
-      #if UNITY_2022_1_OR_NEWER
+#if UNITY_2022_1_OR_NEWER
       modifiedMaterial.parent = baseMaterial;
-      #endif
+#endif
       modifiedMaterial.CopyPropertiesFromMaterial(baseMaterial);
 
       // Iterate over all active modifiers
@@ -84,6 +85,7 @@ namespace Plugins.Animate_UI_Materials
         // Apply the property to the new material
         modifier.ApplyModifiedProperty(modifiedMaterial);
       }
+
       // Return the child material
       return modifiedMaterial;
     }

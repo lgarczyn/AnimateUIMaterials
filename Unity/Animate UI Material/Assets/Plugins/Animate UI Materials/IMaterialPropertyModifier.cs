@@ -1,5 +1,4 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Plugins.Animate_UI_Materials
 {
@@ -26,10 +25,5 @@ namespace Plugins.Animate_UI_Materials
     /// If the source material cannot be found, reset to sensible defaults
     /// </summary>
     void ResetPropertyToDefault();
-
-    /// <summary>
-    ///   Get the type of the property
-    /// </summary>
-    ShaderUtil.ShaderPropertyType GetPropertyType();
   }
 }
