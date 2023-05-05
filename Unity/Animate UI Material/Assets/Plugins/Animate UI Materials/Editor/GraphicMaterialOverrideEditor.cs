@@ -14,8 +14,8 @@ namespace Plugins.Animate_UI_Materials.Editor
   public class GraphicMaterialOverrideEditor : UnityEditor.Editor
   {
     /// <summary>
-    /// The scroll position in the modifiers ScrollView
-    /// Usually not needed, but good to have
+    ///   The scroll position in the modifiers ScrollView
+    ///   Usually not needed, but good to have
     /// </summary>
     Vector2 _scrollPosition;
 
@@ -77,9 +77,12 @@ namespace Plugins.Animate_UI_Materials.Editor
     {
       EditorGUILayout.LabelField("Modifiers");
 
+      if (modifiers.Count == 0)
+        EditorGUILayout.HelpBox("Select a value from the dropdown to add a property modifier", MessageType.Info);
+
       using GUILayout.ScrollViewScope scrollViewScope = new(_scrollPosition);
       using GUILayout.HorizontalScope horizontalScope = new();
-      
+
       // Draw every active modifiers
       // Draw the toggles column
       ForEachParameterVertical(modifiers, DrawModifierToggle, 16f);
@@ -89,13 +92,13 @@ namespace Plugins.Animate_UI_Materials.Editor
       // Draw the value toggles
       // Change the label width to allow a float slider with a small width
       ForEachParameterVertical(modifiers, DrawModifierValue, 300f, 16f);
-      
+
       // Draw the menu button
       ForEachParameterVertical(modifiers, DrawModifierKebabMenu, 16f);
     }
 
     /// <summary>
-    /// Begin a vertical group, and call a draw function on each modifier
+    ///   Begin a vertical group, and call a draw function on each modifier
     /// </summary>
     /// <param name="modifiers">The modifiers to draw</param>
     /// <param name="action">The draw function for a modifier property</param>
@@ -106,11 +109,11 @@ namespace Plugins.Animate_UI_Materials.Editor
       Action<IMaterialPropertyModifier> action,
       float width = 150f,
       float labelWidth = 0f
-      )
+    )
     {
       EditorGUIUtility.labelWidth = labelWidth;
       using EditorGUILayout.VerticalScope scope = new(GUILayout.Width(width));
-      foreach (var param in modifiers) action(param);
+      foreach (IMaterialPropertyModifier param in modifiers) action(param);
       // Reset the label width
       EditorGUIUtility.labelWidth = 0f;
     }
@@ -123,9 +126,9 @@ namespace Plugins.Animate_UI_Materials.Editor
     {
       // Don't capture event if sliders are active
       if (GUIUtility.hotControl != 0) return;
-      if (Event.current.type == EventType.MouseDown
-          && Event.current.button == 1
-          && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+      if (Event.current.type == EventType.MouseDown &&
+          Event.current.button == 1 &&
+          GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
       {
         DrawModifierContextMenu(modifier);
         Event.current.Use();
@@ -136,7 +139,7 @@ namespace Plugins.Animate_UI_Materials.Editor
     GUIStyle _kebabMenuStyle;
 
     /// <summary>
-    /// Draw a button that activate the context menu
+    ///   Draw a button that activate the context menu
     /// </summary>
     /// <param name="modifier"></param>
     void DrawModifierKebabMenu(IMaterialPropertyModifier modifier)
@@ -148,28 +151,21 @@ namespace Plugins.Animate_UI_Materials.Editor
         _kebabMenuStyle.fixedHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
       }
 
-      if (GUILayout.Button("", _kebabMenuStyle))
-      {
-        DrawModifierContextMenu(modifier);
-      }
+      if (GUILayout.Button("", _kebabMenuStyle)) DrawModifierContextMenu(modifier);
     }
 
     /// <summary>
-    /// Draw the context menu for one modifier
+    ///   Draw the context menu for one modifier
     /// </summary>
     /// <param name="modifier"></param>
     void DrawModifierContextMenu(IMaterialPropertyModifier modifier)
     {
       MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
       GenericMenu menu = new();
-      if (IsActiveSelf(modifierComponent))
-      {
+      if (modifierComponent.isActiveAndEnabled)
         menu.AddItem(new GUIContent("Disable"), false, () => ModifierSetActive(modifierComponent, false));
-      }
       else
-      {
         menu.AddItem(new GUIContent("Enable"), false, () => ModifierSetActive(modifierComponent, true));
-      }
       menu.AddItem(new GUIContent("Reset"), false, () => ResetModifier(modifierComponent));
       menu.AddItem(new GUIContent("Delete"), false, () => DeleteModifier(modifierComponent));
       menu.ShowAsContext();
@@ -226,16 +222,6 @@ namespace Plugins.Animate_UI_Materials.Editor
     }
 
     /// <summary>
-    /// Returns true if a component and its GameObject are active 
-    /// </summary>
-    /// <param name="component"></param>
-    /// <returns></returns>
-    static bool IsActiveSelf(MonoBehaviour component)
-    {
-      return component.enabled && component.gameObject.activeSelf;
-    }
-
-    /// <summary>
     ///   Draw a toggle to enable or disable the target modifier component
     /// </summary>
     /// <param name="modifier">The modifier component</param>
@@ -245,7 +231,7 @@ namespace Plugins.Animate_UI_Materials.Editor
       // Start checking for changes
       EditorGUI.BeginChangeCheck();
       // Draw the toggle with limited width
-      bool isActive = EditorGUILayout.Toggle(IsActiveSelf(modifierComponent), GUILayout.Width(16f));
+      bool isActive = EditorGUILayout.Toggle(modifierComponent.isActiveAndEnabled, GUILayout.Width(16f));
       // If changes happened
       if (EditorGUI.EndChangeCheck()) ModifierSetActive(modifierComponent, isActive);
     }
@@ -276,7 +262,7 @@ namespace Plugins.Animate_UI_Materials.Editor
     ///   Draw the value field from the property modifier
     /// </summary>
     /// <param name="modifier">The target IMaterialPropertyModifier</param>
-    void DrawModifierValue(IMaterialPropertyModifier modifier)
+    protected virtual void DrawModifierValue(IMaterialPropertyModifier modifier)
     {
       MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
       // Add change checks to the property field
@@ -284,11 +270,11 @@ namespace Plugins.Animate_UI_Materials.Editor
       // Create a serialized object on the modifier, to display it properly
       SerializedObject obj = new(modifierComponent);
       // For floats, add a label to allow "sliding" the cursor
-      string propertyLabel = modifier.GetPropertyType() == PropertyType.Float ? "⇔" : "";
+      string propertyLabel = modifier is GraphicPropertyOverrideFloat ? "⇔" : "";
       // Get the serialized property
       SerializedProperty property = obj.FindProperty("propertyValue");
       // If property is of type range, display a custom drawer
-      if (modifier.GetPropertyType() == PropertyType.Range) DrawModifierRange(modifier, property);
+      if (modifier is GraphicPropertyOverrideRange) DrawModifierRange(modifier, property);
       // Otherwise, just use the property field
       else EditorGUILayout.PropertyField(property, new GUIContent(propertyLabel));
       // If any change was applied
@@ -313,8 +299,9 @@ namespace Plugins.Animate_UI_Materials.Editor
       Material mat = GetTargetMaterial();
       string propName = modifier.PropertyName;
       int index = ShaderPropertyInfo.GetMaterialProperties(mat)
-        .Find(p => p.name == propName)
-        ?.index ?? -1;
+                                    .Find(p => p.name == propName)
+                                    ?.index ??
+                  -1;
 
       DrawFloatPropertyAsRange(mat, index, property, new GUIContent(""));
     }
@@ -356,24 +343,14 @@ namespace Plugins.Animate_UI_Materials.Editor
     {
       // Create a set to filter out modifiers that are already added
       HashSet<string> namesAlreadyUsed = modifiers
-        .Select(p => p.PropertyName)
-        .ToHashSet();
+                                         .Select(p => p.PropertyName)
+                                         .ToHashSet();
 
       // Display a creation popup
       Material material = GetTargetMaterial();
-      List<ShaderPropertyInfo> allProperties = ShaderPropertyInfo.GetMaterialProperties(material);
-      List<ShaderPropertyInfo> properties = allProperties
-                                            .Where(p => !namesAlreadyUsed.Contains(p.name))
-                                            .ToList();
-
-      if (allProperties.Count == 0)
-      {
-        EditorGUILayout.HelpBox("No available properties on the material", MessageType.Info);
-      }
-      else if (properties.Count > 0 && modifiers.Count == 0)
-      {
-        EditorGUILayout.HelpBox("Select a value from the dropdown to add a property modifier", MessageType.Info);
-      }
+      List<ShaderPropertyInfo> properties = ShaderPropertyInfo.GetMaterialProperties(material)
+                                                              .Where(p => !namesAlreadyUsed.Contains(p.name))
+                                                              .ToList();
 
       string[] propertyNames = properties.Select(p => p.name).ToArray();
       int selectedIndex = EditorGUILayout.Popup(new GUIContent("Add Override"), -1, propertyNames);
@@ -393,7 +370,7 @@ namespace Plugins.Animate_UI_Materials.Editor
     {
       GameObject child = new();
       child.name = $"{propertyInfo.name} Override";
-      child.transform.parent = parent;
+      child.transform.SetParent(parent, false);
 
       Undo.RegisterCreatedObjectUndo(child, $"Added override for property ${propertyInfo.name}");
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -25,15 +26,16 @@ namespace Plugins.Animate_UI_Materials.Editor
     public override void OnInspectorGUI()
     {
       serializedObject.Update();
-      
+
       // Draw the script header
       using (new EditorGUI.DisabledScope(true))
         EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Script"));
 
       // Draw a warning if the material cannot be found
-      if (!GetTargetMaterial()) EditorGUILayout.HelpBox(
-        "The parent doesn't contain a GraphicMaterialOverride. Add one to continue",
-        MessageType.Error);
+      if (!GetTargetMaterial())
+        EditorGUILayout.HelpBox(
+          "The parent doesn't contain a GraphicMaterialOverride. Add one to continue",
+          MessageType.Error);
 
       string[] properties = GetPropertyNames().ToArray();
       // Draw a dropdown list of float properties in the material
@@ -72,11 +74,20 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// Get the property type from the target object
     /// </summary>
     /// <returns></returns>
-    protected PropertyType GetPropertyType()
+    protected virtual PropertyType GetPropertyType()
     {
       GraphicPropertyOverride animated = (GraphicPropertyOverride)target;
 
-      return animated.GetPropertyType();
+      return animated switch
+      {
+        GraphicPropertyOverrideColor => PropertyType.Color,
+        GraphicPropertyOverrideFloat => PropertyType.Float,
+        GraphicPropertyOverrideVector => PropertyType.Vector,
+        GraphicPropertyOverrideInt => PropertyType.Int,
+        GraphicPropertyOverrideRange => PropertyType.Range,
+        GraphicPropertyOverrideTexture => PropertyType.TexEnv,
+        _ => throw new Exception($"Unknown type {target?.GetType()}")
+      };
     }
 
     /// <summary>
@@ -99,8 +110,9 @@ namespace Plugins.Animate_UI_Materials.Editor
       Material material = GetTargetMaterial();
       string propertyName = _propertyName.stringValue;
       return ShaderPropertyInfo.GetMaterialProperties(material)
-        .Find(p => p.name == propertyName)
-        ?.index ?? -1;
+                               .Find(p => p.name == propertyName)
+                               ?.index ??
+             -1;
     }
 
     /// <summary>
@@ -113,9 +125,9 @@ namespace Plugins.Animate_UI_Materials.Editor
       PropertyType type = GetPropertyType();
 
       return ShaderPropertyInfo.GetMaterialProperties(material)
-        .Where(p => p.type == type)
-        .Select(p => p.name)
-        .ToList();
+                               .Where(p => p.type == type)
+                               .Select(p => p.name)
+                               .ToList();
     }
   }
 }
