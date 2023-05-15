@@ -74,7 +74,7 @@ namespace Plugins.Animate_UI_Materials
       // Create a child material of the original
       // This allows any later modifications to the original material to be preserved 
       Material modifiedMaterial = new Material(baseMaterial.shader);
-#if UNITY_2022_1_OR_NEWER
+#if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
       modifiedMaterial.parent = baseMaterial;
 #endif
       modifiedMaterial.CopyPropertiesFromMaterial(baseMaterial);
