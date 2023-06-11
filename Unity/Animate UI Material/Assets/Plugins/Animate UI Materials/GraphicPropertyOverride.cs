@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -57,8 +58,8 @@ namespace Plugins.Animate_UI_Materials
     public void SetMaterialDirty(bool renewId = false)
     {
       if (renewId || PropertyId == 0) PropertyId = Shader.PropertyToID(propertyName);
-      if (!transform.parent) return;
-      if (transform.parent.TryGetComponent(out GraphicMaterialOverride parent)) parent.SetMaterialDirty();
+      GraphicMaterialOverride parent = ParentOverride;
+      if (parent) parent.SetMaterialDirty();
     }
 
     /// <summary>
@@ -81,6 +82,17 @@ namespace Plugins.Animate_UI_Materials
         SetMaterialDirty(true);
       }
     }
+
+    /// <summary>
+    ///   Try to get the Graphic component on the parent
+    /// </summary>
+    protected Graphic ParentGraphic => transform.parent ? transform.parent.GetComponent<Graphic>() : null;
+
+    /// <summary>
+    ///   Try to get the GraphicMaterialOverride component on the parent
+    /// </summary>
+    protected GraphicMaterialOverride ParentOverride =>
+      transform.parent ? transform.parent.GetComponent<GraphicMaterialOverride>() : null;
   }
 
   /// <summary>
@@ -100,8 +112,14 @@ namespace Plugins.Animate_UI_Materials
     /// <summary>
     /// The last known value, init the the type default (0, null, ...)
     /// Used to check for changes
+    /// NonSerialized to prevent unity from serializing this
     /// </summary>
-    T _previousValue;
+    [NonSerialized] T _previousValue;
+
+    /// <summary>
+    ///   If _previousValue was set since last construction
+    /// </summary>
+    [NonSerialized] bool _previousValueIsInit;
 
     /// <summary>
     /// Checks if any changes happened just before rendering
@@ -110,8 +128,12 @@ namespace Plugins.Animate_UI_Materials
     /// </summary>
     void LateUpdate()
     {
-      if (EqualityComparer<T>.Default.Equals(propertyValue, _previousValue)) return;
+      // If a previous value was recorded
+      // And it perfectly matches the current value
+      // Then ignore this update
+      if (_previousValueIsInit && EqualityComparer<T>.Default.Equals(propertyValue, _previousValue)) return;
 
+      _previousValueIsInit = true;
       _previousValue = propertyValue;
       SetMaterialDirty();
     }
@@ -121,6 +143,7 @@ namespace Plugins.Animate_UI_Materials
     /// </summary>
     public void OnDidApplyAnimationProperties()
     {
+      _previousValueIsInit = true;
       _previousValue = propertyValue;
       SetMaterialDirty();
     }
@@ -134,6 +157,7 @@ namespace Plugins.Animate_UI_Materials
       get => propertyValue;
       set
       {
+        _previousValueIsInit = true;
         _previousValue = propertyValue = value;
         SetMaterialDirty();
       }
@@ -157,7 +181,7 @@ namespace Plugins.Animate_UI_Materials
     public override void ResetPropertyToDefault()
     {
       // Try to get the associated Graphic component
-      Graphic graphic = transform.parent.GetComponent<Graphic>();
+      Graphic graphic = ParentGraphic;
       // If successful, get the material
       Material material = graphic ? graphic.material : null;
       // init the reset value to default
