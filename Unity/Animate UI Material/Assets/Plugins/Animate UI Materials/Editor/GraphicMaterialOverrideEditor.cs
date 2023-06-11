@@ -333,7 +333,7 @@ namespace Plugins.Animate_UI_Materials.Editor
       SerializedProperty property,
       GUIContent label)
     {
-      if (!material || propertyIndex <= 0)
+      if (!material || propertyIndex < 0)
       {
         EditorGUILayout.PropertyField(property);
         return;
