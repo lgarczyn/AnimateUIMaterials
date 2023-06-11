@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Plugins.Animate_UI_Materials
 {
+  [ExecuteInEditMode]
   [AddComponentMenu("UI/Animate UI Material/GraphicMaterialOverride")]
   public class GraphicMaterialOverride : MonoBehaviour, IMaterialModifier
   {
@@ -12,7 +14,7 @@ namespace Plugins.Animate_UI_Materials
     /// </summary>
     public void SetMaterialDirty()
     {
-      if (TryGetComponent<Graphic>(out Graphic graphic))
+      if (TryGetComponent(out Graphic graphic))
       {
         graphic.SetMaterialDirty();
       }
@@ -21,7 +23,7 @@ namespace Plugins.Animate_UI_Materials
     /// <summary>
     /// A buffer list to accelerate GetComponents requests
     /// </summary>
-    List<IMaterialPropertyModifier> _modifiers;
+    [NonSerialized] List<IMaterialPropertyModifier> _modifiers;
 
     /// <summary>
     /// Retrieves all enabled IMaterialPropertyModifiers belonging to direct children
@@ -30,7 +32,7 @@ namespace Plugins.Animate_UI_Materials
     public IEnumerable<IMaterialPropertyModifier> GetModifiers(bool includeInactive = false)
     {
       // Ensure the buffer list is available
-      if (_modifiers == null) _modifiers = new List<IMaterialPropertyModifier>();
+      _modifiers ??= new List<IMaterialPropertyModifier>();
 
       // Load all IPropertyModifiers belonging the direct children of this GameObject
       foreach (Transform child in transform)
@@ -38,7 +40,7 @@ namespace Plugins.Animate_UI_Materials
         // skip this GameObject if disabled
         if (!child.gameObject.activeSelf && !includeInactive) continue;
         // disabled children will be ignored
-        child.GetComponents<IMaterialPropertyModifier>(_modifiers);
+        child.GetComponents(_modifiers);
         // Call the children to apply their modified properties
         foreach (IMaterialPropertyModifier propertyModifier in _modifiers)
         {
