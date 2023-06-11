@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -93,6 +94,21 @@ namespace Plugins.Animate_UI_Materials
     /// </summary>
     protected GraphicMaterialOverride ParentOverride =>
       transform.parent ? transform.parent.GetComponent<GraphicMaterialOverride>() : null;
+    
+    
+    /// <summary>
+    ///   Override the reset context menu to implement the reset function
+    ///   Needed instead of "MonoBehavior.Reset" on GraphicMaterialOverride because Reset is called in other contexts
+    /// </summary>
+    [MenuItem("CONTEXT/GraphicPropertyOverride/Reset")]
+    static void ResetPropertyValue(MenuCommand b)
+    {
+      if (b.context is not GraphicPropertyOverride propertyOverride) return;
+
+      Undo.RecordObject(propertyOverride, "Reset material override");
+      propertyOverride.ResetPropertyToDefault(); 
+      PrefabUtility.RecordPrefabInstancePropertyModifications(propertyOverride);
+    }
   }
 
   /// <summary>
@@ -162,17 +178,6 @@ namespace Plugins.Animate_UI_Materials
         SetMaterialDirty();
       }
     }
-
-#if UNITY_EDITOR // if in the unity editor, include unity editor callbacks
-    /// <summary>
-    /// On component reset, set value to default
-    /// </summary>
-    void Reset()
-    {
-      ResetPropertyToDefault();
-    }
-
-#endif
 
     /// <summary>
     /// Try to retrieve and apply the default property value
