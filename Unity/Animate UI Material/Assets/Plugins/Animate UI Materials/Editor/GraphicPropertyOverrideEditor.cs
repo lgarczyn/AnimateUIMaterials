@@ -56,7 +56,9 @@ namespace Plugins.Animate_UI_Materials.Editor
       {
         EditorGUILayout.LabelField("Cannot multi-edit property name");
       }
-
+      
+      DrawPropertiesExcluding(serializedObject, "m_Script", "propertyName", "propertyValue");
+      
       DrawValueProperty(_propertyValue);
 
       // If change happened, apply modified properties
