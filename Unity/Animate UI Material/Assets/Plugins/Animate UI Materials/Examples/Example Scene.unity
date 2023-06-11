@@ -425,6 +425,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   propertyName: _Color
   propertyValue: {r: 1, g: 1, b: 1, a: 1}
+  isHDR: 0
 --- !u!1 &1010993211
 GameObject:
   m_ObjectHideFlags: 0
@@ -572,6 +573,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   propertyName: _OverlayColor
   propertyValue: {r: 1, g: 1, b: 1, a: 1}
+  isHDR: 1
 --- !u!1 &1236616672
 GameObject:
   m_ObjectHideFlags: 0
