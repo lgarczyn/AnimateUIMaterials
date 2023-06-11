@@ -250,7 +250,10 @@ namespace Plugins.Animate_UI_Materials.Editor
       {
         MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
         // Create a "link" field to the modifier object
-        if (GUILayout.Button("↗", GUILayout.Width(20f)))
+        if (GUILayout.Button(
+              "↗",
+              GUILayout.Width(20f),
+              GUILayout.Height(EditorGUIUtility.singleLineHeight)))
         {
           Selection.activeGameObject = modifierComponent.gameObject;
         }
@@ -259,7 +262,9 @@ namespace Plugins.Animate_UI_Materials.Editor
           // Disable read-only fields, as they should not be modified here
           using EditorGUI.DisabledScope disabledScope = new(true);
           // Display the modifier property name
-          EditorGUILayout.TextField(modifier.PropertyName);
+          EditorGUILayout.TextField(
+            modifier.PropertyName, 
+            GUILayout.Height(EditorGUIUtility.singleLineHeight));
         }
       }
       // Capture right clicks over this area
