@@ -231,7 +231,10 @@ namespace Plugins.Animate_UI_Materials.Editor
       // Start checking for changes
       EditorGUI.BeginChangeCheck();
       // Draw the toggle with limited width
-      bool isActive = EditorGUILayout.Toggle(modifierComponent.isActiveAndEnabled, GUILayout.Width(16f));
+      bool isActive = EditorGUILayout.Toggle(
+        modifierComponent.isActiveAndEnabled, 
+        GUILayout.Width(16f),
+        GUILayout.Height(EditorGUIUtility.singleLineHeight));
       // If changes happened
       if (EditorGUI.EndChangeCheck()) ModifierSetActive(modifierComponent, isActive);
     }
@@ -242,17 +245,22 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// <param name="modifier">The target property modifier</param>
     void DrawModifierReadOnlyValues(IMaterialPropertyModifier modifier)
     {
-      MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
-      // In a scope so that CaptureRightClick can get the correct rect
+      // Start a horizontal scope
+      using EditorGUILayout.HorizontalScope horizontalScope = new();
       {
-        // Disable read-only fields, as they should not be modified here
-        using EditorGUI.DisabledScope disabledScope = new(true);
-        // Start a horizontal scope
-        using EditorGUILayout.HorizontalScope horizontalScope = new();
+        MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
         // Create a "link" field to the modifier object
-        EditorGUILayout.ObjectField(modifierComponent, typeof(IMaterialPropertyModifier), true);
-        // Display the modifier property name
-        EditorGUILayout.TextField(modifier.PropertyName);
+        if (GUILayout.Button("↗", GUILayout.Width(20f)))
+        {
+          Selection.activeGameObject = modifierComponent.gameObject;
+        }
+        // In a scope so that CaptureRightClick can get the correct rect
+        {
+          // Disable read-only fields, as they should not be modified here
+          using EditorGUI.DisabledScope disabledScope = new(true);
+          // Display the modifier property name
+          EditorGUILayout.TextField(modifier.PropertyName);
+        }
       }
       // Capture right clicks over this area
       CaptureRightClick(modifier);
