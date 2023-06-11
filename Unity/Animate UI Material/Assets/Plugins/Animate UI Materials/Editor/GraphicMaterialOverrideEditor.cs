@@ -287,7 +287,9 @@ namespace Plugins.Animate_UI_Materials.Editor
       // Get the serialized property
       SerializedProperty property = obj.FindProperty("propertyValue");
       // If property is of type range, display a custom drawer
-      if (modifier is GraphicPropertyOverrideRange) DrawModifierRange(modifier, property);
+      if (modifier is GraphicPropertyOverrideRange range) DrawModifierRange(range, property);
+      // If property is of type color, display a color field
+      else if (modifier is GraphicPropertyOverrideColor color) DrawModifierColor(color, property);
       // Otherwise, just use the property field
       else EditorGUILayout.PropertyField(property, new GUIContent(propertyLabel));
       // If any change was applied
@@ -307,7 +309,7 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// </summary>
     /// <param name="modifier">The target IMaterialPropertyModifier</param>
     /// <param name="property">The serialized property of the value</param>
-    void DrawModifierRange(IMaterialPropertyModifier modifier, SerializedProperty property)
+    void DrawModifierRange(GraphicPropertyOverrideRange modifier, SerializedProperty property)
     {
       Material mat = GetTargetMaterial();
       string propName = modifier.PropertyName;
@@ -317,6 +319,28 @@ namespace Plugins.Animate_UI_Materials.Editor
                   -1;
 
       DrawFloatPropertyAsRange(mat, index, property, new GUIContent(""));
+    }
+
+    /// <summary>
+    ///   Retrieve shader property information and draw a color field
+    /// </summary>
+    /// <param name="modifier">The target IMaterialPropertyModifier</param>
+    /// <param name="property">The serialized property of the value</param>
+    void DrawModifierColor(GraphicPropertyOverrideColor modifier, SerializedProperty property)
+    {
+      SerializedProperty hdrProp = property.serializedObject
+                                           .FindProperty(nameof(GraphicPropertyOverrideColor.isHDR));
+      
+      using EditorGUILayout.HorizontalScope horizontalScope = new();
+      
+      EditorGUILayout.PropertyField(hdrProp, new GUIContent(""), GUILayout.Width(16));
+      EditorGUILayout.LabelField(new GUIContent("HDR"), GUILayout.Width(32));
+        
+      DrawColorPropertyAsHdr(
+        GetTargetMaterial(),
+        property,
+        modifier.isHDR,
+        new GUIContent(""));
     }
 
     /// <summary>
@@ -344,6 +368,29 @@ namespace Plugins.Animate_UI_Materials.Editor
       float max = ShaderUtil.GetRangeLimits(shader, propertyIndex, 2);
 
       EditorGUILayout.Slider(property, min, max, label);
+    }
+
+    /// <summary>
+    ///   Draw a color field for a shader property, hdr if required
+    ///   If the information cannot be found, draw a color property
+    /// </summary>
+    /// <param name="material">The material holding the shader property</param>
+    /// <param name="propertyIndex">The index of the shader property</param>
+    /// <param name="property">The serialized property in the modifier</param>
+    /// <param name="label">The label of the property</param>
+    public static void DrawColorPropertyAsHdr(
+      Material material,
+      SerializedProperty property,
+      bool isHdr,
+      GUIContent label)
+    {
+      if (!material)
+      {
+        EditorGUILayout.PropertyField(property);
+        return;
+      }
+
+      property.colorValue = EditorGUILayout.ColorField(label, property.colorValue, true, true, isHdr);
     }
 
     /// <summary>

@@ -10,6 +10,12 @@ namespace Plugins.Animate_UI_Materials
   [AddComponentMenu("UI/Animate UI Material/GraphicPropertyOverrideColor")]
   public class GraphicPropertyOverrideColor : GraphicPropertyOverride<Color>
   {
+#if UNITY_EDITOR
+    /// <summary>
+    /// A flag for the editor to draw the color field as HDR
+    /// </summary>
+    public bool isHDR;
+#endif
     /// <summary>
     /// Apply the modified property to the material
     /// </summary>
