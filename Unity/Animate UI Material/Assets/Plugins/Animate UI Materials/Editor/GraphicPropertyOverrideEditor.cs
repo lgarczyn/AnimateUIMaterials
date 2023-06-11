@@ -10,10 +10,11 @@ namespace Plugins.Animate_UI_Materials.Editor
   using PropertyType = ShaderUtil.ShaderPropertyType;
 
   [CustomEditor(typeof(GraphicPropertyOverride), true)]
+  [CanEditMultipleObjects]
   public class GraphicPropertyOverrideEditor : UnityEditor.Editor
   {
-    protected SerializedProperty _propertyName;
-    protected SerializedProperty _propertyValue;
+    SerializedProperty _propertyName;
+    SerializedProperty _propertyValue;
 
     void OnEnable()
     {
@@ -31,32 +32,44 @@ namespace Plugins.Animate_UI_Materials.Editor
       using (new EditorGUI.DisabledScope(true))
         EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Script"));
 
-      // Draw a warning if the material cannot be found
-      if (!GetTargetMaterial())
-        EditorGUILayout.HelpBox(
-          "The parent doesn't contain a GraphicMaterialOverride. Add one to continue",
-          MessageType.Error);
+      // Start change check
+      using EditorGUI.ChangeCheckScope scope = new();
 
-      string[] properties = GetPropertyNames().ToArray();
-      // Draw a dropdown list of float properties in the material
-      EditorGUI.BeginChangeCheck();
+      // If single target (not multi-editing)
+      if (targets.Length == 1)
+      {
+        // Draw a warning if the material cannot be found
+        if (!GetTargetMaterial())
+          EditorGUILayout.HelpBox(
+            "The parent doesn't contain a GraphicMaterialOverride. Add one to continue",
+            MessageType.Error);
 
-      int currentIndex = GetPropertyIndexDropdown();
-      int index = EditorGUILayout.Popup("Property Name", currentIndex, properties);
-      if (EditorGUI.EndChangeCheck()) _propertyName.stringValue = properties[index];
+        string[] properties = GetPropertyNames().ToArray();
+        // Draw a dropdown list of float properties in the material
+        EditorGUI.BeginChangeCheck();
 
-      DrawValueProperty();
+        int currentIndex = GetPropertyIndexDropdown();
+        int index = EditorGUILayout.Popup("Property Name", currentIndex, properties);
+        if (EditorGUI.EndChangeCheck()) _propertyName.stringValue = properties[index];
+      }
+      else
+      {
+        EditorGUILayout.LabelField("Cannot multi-edit property name");
+      }
 
-      serializedObject.ApplyModifiedProperties();
+      DrawValueProperty(_propertyValue);
+
+      // If change happened, apply modified properties
+      if (scope.changed) serializedObject.ApplyModifiedProperties();
     }
 
     /// <summary>
     /// Overridable method to draw the value property
     /// Overriden by GraphicPropertyOverrideRange to display ranges
     /// </summary>
-    protected virtual void DrawValueProperty()
+    protected virtual void DrawValueProperty(SerializedProperty property)
     {
-      EditorGUILayout.PropertyField(_propertyValue);
+      EditorGUILayout.PropertyField(property);
     }
 
     /// <summary>

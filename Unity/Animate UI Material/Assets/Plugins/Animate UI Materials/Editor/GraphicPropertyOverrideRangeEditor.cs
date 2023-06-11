@@ -13,16 +13,22 @@ namespace Plugins.Animate_UI_Materials.Editor
   [CustomEditor(typeof(GraphicPropertyOverrideRange), true)]
   public class GraphicPropertyOverrideRangeEditor : GraphicPropertyOverrideEditor
   {
-    protected override void DrawValueProperty()
+    protected override void DrawValueProperty(SerializedProperty property)
     {
+      // If in multi-edit mode, just display a float field
+      if (targets.Length > 1)
+      {
+        base.DrawValueProperty(property);
+        return;
+      }
+
       Material material = GetTargetMaterial();
       int propertyIndex = GetPropertyIndex();
 
-      EditorGUI.BeginChangeCheck();
-      GraphicMaterialOverrideEditor.DrawFloatPropertyAsRange(material, propertyIndex, _propertyValue,
+      GraphicMaterialOverrideEditor.DrawFloatPropertyAsRange(material,
+        propertyIndex,
+        property,
         new GUIContent(""));
-
-      if (EditorGUI.EndChangeCheck()) serializedObject.ApplyModifiedProperties();
     }
   }
 }
