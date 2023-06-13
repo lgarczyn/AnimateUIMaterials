@@ -10,7 +10,7 @@ namespace Plugins.Animate_UI_Materials
   ///   Used in combination with GraphicMaterialOverride to modify and animate shader properties
   ///   The base class is used for the shared Editor script, and reacting to OnValidate events
   /// </summary>
-  [ExecuteInEditMode]
+  [ExecuteAlways]
   public abstract class GraphicPropertyOverride : MonoBehaviour, IMaterialPropertyModifier
   {
     /// <summary>
