@@ -144,5 +144,19 @@ namespace Plugins.Animate_UI_Materials.Editor
                                .Select(p => p.name)
                                .ToList();
     }
+    
+    /// <summary>
+    ///   Override the reset context menu to implement the reset function
+    ///   Needed instead of "MonoBehavior.Reset" on GraphicMaterialOverride because Reset is called in other contexts
+    /// </summary>
+    [MenuItem("CONTEXT/GraphicPropertyOverride/Reset")]
+    static void ResetPropertyValue(MenuCommand b)
+    {
+      if (b.context is not GraphicPropertyOverride propertyOverride) return;
+
+      Undo.RecordObject(propertyOverride, "Reset material override");
+      propertyOverride.ResetPropertyToDefault(); 
+      PrefabUtility.RecordPrefabInstancePropertyModifications(propertyOverride);
+    }
   }
 }
