@@ -40,6 +40,17 @@ namespace Plugins.Animate_UI_Materials.Editor
         PrefabUtility.RecordPrefabInstancePropertyModifications((Object)modifier);
       }
     }
+    
+    /// <summary>
+    /// Ask the Graphic component to reload the modified material
+    /// </summary>
+    [MenuItem("CONTEXT/GraphicMaterialOverride/Reload Source Material")]
+    static void ReloadSourceMaterial(MenuCommand b)
+    {
+      if (b.context is not GraphicMaterialOverride materialOverride) return;
+      materialOverride.SetMaterialDirty();
+      EditorUtility.SetDirty(materialOverride);
+    }
 
     public override void OnInspectorGUI()
     {
