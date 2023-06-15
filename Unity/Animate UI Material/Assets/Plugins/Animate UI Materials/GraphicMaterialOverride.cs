@@ -74,8 +74,11 @@ namespace Plugins.Animate_UI_Materials
       if (!enabled || baseMaterial == null) return baseMaterial;
 
       // Create a child material of the original
-      // This allows any later modifications to the original material to be preserved 
-      Material modifiedMaterial = new Material(baseMaterial.shader);
+      Material modifiedMaterial = new (baseMaterial.shader)
+      {
+        // Set a new name, to warn about editor modifications
+        name = $"DO NOT MODIFY, OVERRIDEN \"{baseMaterial.name}\""
+      };
 #if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
       modifiedMaterial.parent = baseMaterial;
 #endif
