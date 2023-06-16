@@ -301,6 +301,8 @@ namespace Plugins.Animate_UI_Materials.Editor
       if (modifier is GraphicPropertyOverrideRange range) DrawModifierRange(range, property);
       // If property is of type color, display a color field
       else if (modifier is GraphicPropertyOverrideColor color) DrawModifierColor(color, property);
+      // If property is of type vector, ...
+      else if (modifier is GraphicPropertyOverrideVector) DrawModifierVector(property);
       // Otherwise, just use the property field
       else EditorGUILayout.PropertyField(property, new GUIContent(propertyLabel));
       // If any change was applied
@@ -352,6 +354,22 @@ namespace Plugins.Animate_UI_Materials.Editor
         property,
         modifier.isHDR,
         new GUIContent(""));
+    }
+    
+    /// <summary>
+    /// Draws a vector field for in a single line
+    /// </summary>
+    /// <param name="property">The Vector4 serialized property</param>
+    void DrawModifierVector(SerializedProperty property)
+    {
+      GUIContent[] contents = new[]{"X", "Y", "Z", "W"}.Select(l => new GUIContent(l)).ToArray();
+
+      // Find the first child serialized property
+      SerializedProperty firstProperty = property.Copy();
+      firstProperty.NextVisible(true);
+      var position = EditorGUILayout.GetControlRect();
+      
+      EditorGUI.MultiPropertyField(position, contents, firstProperty, new GUIContent());
     }
 
     /// <summary>
