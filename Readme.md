@@ -119,6 +119,6 @@ Alternatively, hit the **Record** button, and simply modify the properties from 
 
 # End Notes
 
-If you encounter a bug or need any help, please contact me at [fleeting.being@gmail.com](mailto:fleeting.being@gmail.com)
+If you encounter a bug or need any help, please contact me at [fleeting.being.official@gmail.com](mailto:fleeting.being.official@gmail.com)
 
 Don’t hesitate to look into the code if you want to know how things work !

@@ -12,8 +12,7 @@ Shader "Animate UI Material/Example"
         _OverlayColor ("Overlay Color", Color) = (1, 1, 1, 1)
         _Scale ("Scale", Range(0, 2)) = 1
         _Rotation ("Rotation", Range(0, 360)) = 0
-        _OffsetX ("Offset X", Range(-1, 1)) = 0
-        _OffsetY ("Offset Y", Range(-1, 1)) = 0
+        _Offset ("Offset", Vector) = (0, 0, 0, 0)
 
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
@@ -94,8 +93,7 @@ Shader "Animate UI Material/Example"
             float4 _OverlayColor;
             float _Scale;
             float _Rotation;
-            float _OffsetX;
-            float _OffsetY;
+            float2 _Offset;
 
             v2f vert(appdata_t v)
             {
@@ -124,7 +122,7 @@ Shader "Animate UI Material/Example"
                     overlayUV.x * sin(rad) + overlayUV.y * cos(rad)
                 );
                 float2 normalizedUV = rotatedUV / 2 + 0.5;
-                float2 offsetUV = normalizedUV + float2(_OffsetX, _OffsetY);
+                float2 offsetUV = normalizedUV + float2(_Offset.x, _Offset.y);
                 fixed4 overlay = tex2D(_OverlayTex, offsetUV) * _OverlayColor;
  
                 // Blend the background and overlay textures

@@ -7,8 +7,7 @@ namespace Plugins.Animate_UI_Materials.Editor
 
   /// <summary>
   /// A special editor for Color properties
-  /// Retrieves the range min and max from the shader, and draws the slider field
-  /// In case of failure to retrieve, it will simply display a float property
+  /// Retrieves the hdr flag from the property override
   /// </summary>
   [CustomEditor(typeof(GraphicPropertyOverrideColor), true)]
   public class GraphicPropertyOverrideColorEditor : GraphicPropertyOverrideEditor
