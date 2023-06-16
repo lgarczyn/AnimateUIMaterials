@@ -96,16 +96,7 @@ namespace Plugins.Animate_UI_Materials.Editor
 
       // Draw every active modifiers
       // Draw the toggles column
-      ForEachParameterVertical(modifiers, DrawModifierToggle, 16f);
-      // Draw the name columns
-      ForEachParameterVertical(modifiers, DrawModifierReadOnlyValues, 0f);
-
-      // Draw the value toggles
-      // Change the label width to allow a float slider with a small width
-      ForEachParameterVertical(modifiers, DrawModifierValue, 300f, 16f);
-
-      // Draw the menu button
-      ForEachParameterVertical(modifiers, DrawModifierKebabMenu, 16f);
+      ForEachParameterVertical(modifiers, DrawModifier);
     }
 
     /// <summary>
@@ -113,10 +104,25 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// </summary>
     /// <param name="modifiers">The modifiers to draw</param>
     /// <param name="action">The draw function for a modifier property</param>
-    /// <param name="width">The width of the column</param>
-    /// <param name="labelWidth">The width of labels in the column</param>
     static void ForEachParameterVertical(
       List<IMaterialPropertyModifier> modifiers,
+      Action<IMaterialPropertyModifier> action
+    )
+    {
+      EditorGUILayout.BeginVertical();
+      foreach (IMaterialPropertyModifier param in modifiers) action(param);
+      EditorGUILayout.EndVertical();
+    }
+
+    /// <summary>
+    ///   Render a single column containing a property
+    /// </summary>
+    /// <param name="modifiers">The modifiers to draw</param>
+    /// <param name="action">The draw function for a modifier property</param>
+    /// <param name="width">The width of the column</param>
+    /// <param name="labelWidth">The width of labels in the column</param>
+    static void SingleParameterVertical(
+      IMaterialPropertyModifier modifier,
       Action<IMaterialPropertyModifier> action,
       float width = 150f,
       float labelWidth = 0f
@@ -124,7 +130,7 @@ namespace Plugins.Animate_UI_Materials.Editor
     {
       EditorGUIUtility.labelWidth = labelWidth;
       using EditorGUILayout.VerticalScope scope = new(GUILayout.Width(width));
-      foreach (IMaterialPropertyModifier param in modifiers) action(param);
+      action(modifier);
       // Reset the label width
       EditorGUIUtility.labelWidth = 0f;
     }
@@ -236,6 +242,20 @@ namespace Plugins.Animate_UI_Materials.Editor
     ///   Draw a toggle to enable or disable the target modifier component
     /// </summary>
     /// <param name="modifier">The modifier component</param>
+    void DrawModifier(IMaterialPropertyModifier modifier)
+    {
+      EditorGUILayout.BeginHorizontal(); 
+      SingleParameterVertical(modifier, DrawModifierToggle, 16f);
+      SingleParameterVertical(modifier, DrawModifierReadOnlyValues, 0f);
+      SingleParameterVertical(modifier, DrawModifierValue, 300f);
+      SingleParameterVertical(modifier, DrawModifierKebabMenu, 16f);
+      EditorGUILayout.EndHorizontal();
+    }
+
+    /// <summary>
+    ///   Draw a toggle to enable or disable the target modifier component
+    /// </summary>
+    /// <param name="modifier">The modifier component</param>
     void DrawModifierToggle(IMaterialPropertyModifier modifier)
     {
       MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
@@ -244,8 +264,7 @@ namespace Plugins.Animate_UI_Materials.Editor
       // Draw the toggle with limited width
       bool isActive = EditorGUILayout.Toggle(
         modifierComponent.isActiveAndEnabled, 
-        GUILayout.Width(16f),
-        GUILayout.Height(EditorGUIUtility.singleLineHeight));
+        GUILayout.Width(16f));
       // If changes happened
       if (EditorGUI.EndChangeCheck()) ModifierSetActive(modifierComponent, isActive);
     }
