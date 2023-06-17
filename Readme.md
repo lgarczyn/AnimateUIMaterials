@@ -20,22 +20,15 @@ You can see such an example in the demo scene.
 
 # Setup
 
-To start, simply add the **GraphicMaterialOverride** component to an UI element, such as an **Image** with a custom **Material**
+Download the package from the [asset store](https://assetstore.unity.com/packages/2d/gui/animate-ui-materials-253197) or the Releases folder
 
+Import the package into your project
 
-
-
-
+Simply add the **GraphicMaterialOverride** component to an UI element, such as an **Image** with a custom **Material**
 
 ![alt_text](images/image3.png "image_tooltip")
 
-
 When selecting the dropdown “Add Override”, you will be greeted with every possible property you can animate.
-
-
-
-
-
 
 ![alt_text](images/image4.png "image_tooltip")
 
