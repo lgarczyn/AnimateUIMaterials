@@ -108,7 +108,19 @@ Alternatively, hit the **Record** button, and simply modify the properties from 
 
 ![alt_text](images/image13.png "image_tooltip")
 
+# Next Steps
 
+## Emulate an actual MaterialEditor
+
+I want to support custom materials drawers, and other possible combinations, which could be done with a "ghost" MaterialEditor, but would require dropping support before unity 2021.3
+
+https://discussions.unity.com/t/edit-chosen-material-in-the-inspector-for-custom-editor/67530/3
+
+This is required as MaterialEditor does a lot of closed-source heavy lifting to recover that attribute data, and because those attribute drawer require a reference to the MaterialEditor 
+
+## Baking custom materials
+
+Since there is is a slight overhead to using this script, especially for non-animated materials, being able to easily convert an override into an asset would be nice
 
 # End Notes
 
