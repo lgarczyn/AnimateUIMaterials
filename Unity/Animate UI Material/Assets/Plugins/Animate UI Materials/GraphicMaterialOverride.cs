@@ -7,7 +7,7 @@ namespace Plugins.Animate_UI_Materials
 {
   [ExecuteAlways]
   [AddComponentMenu("UI/Animate UI Material/GraphicMaterialOverride")]
-  public class GraphicMaterialOverride : MonoBehaviour, IMaterialModifier
+  public class GraphicMaterialOverride : BufferedMaterialModifier
   {
     /// <summary>
     /// Recreate the modified material using each active IMaterialPropertyModifier on this GameObject or its children
@@ -62,38 +62,18 @@ namespace Plugins.Animate_UI_Materials
     void OnDisable() => SetMaterialDirty();
 
     /// <summary>
-    /// From IMaterialModifier
-    /// Receives a material to be modified before display, and returns a new material
-    /// Only called once per frame per Graphic if changed, as Graphic is well optimized
+    /// Called by Graphic using the IMaterialModifier interface through the parent class
+    /// Modifies the buffered material to match all children component specifications
     /// </summary>
-    /// <param name="baseMaterial"></param>
-    /// <returns>A new material object</returns>
-    public Material GetModifiedMaterial(Material baseMaterial)
+    /// <param name="modifiedMaterial">A copy of the Graphic base material, buffered for reuse</param>
+    protected override void ModifyMaterial(Material modifiedMaterial)
     {
-      // Return the base material if invalid or if this component is disabled
-      if (!enabled || baseMaterial == null) return baseMaterial;
-
-      // Create a child material of the original
-      Material modifiedMaterial = new (baseMaterial.shader)
-      {
-        // Set a new name, to warn about editor modifications
-        name = $"{baseMaterial.name} OVERRIDE",
-        hideFlags = HideFlags.HideAndDontSave & HideFlags.NotEditable
-      };
-#if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
-      modifiedMaterial.parent = baseMaterial;
-#endif
-      modifiedMaterial.CopyPropertiesFromMaterial(baseMaterial);
-
       // Iterate over all active modifiers
       foreach (IMaterialPropertyModifier modifier in GetModifiers())
       {
         // Apply the property to the new material
         modifier.ApplyModifiedProperty(modifiedMaterial);
       }
-
-      // Return the child material
-      return modifiedMaterial;
     }
   }
 }

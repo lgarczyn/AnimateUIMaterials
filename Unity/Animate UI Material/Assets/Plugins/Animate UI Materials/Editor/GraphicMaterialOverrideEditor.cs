@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -50,6 +51,70 @@ namespace Plugins.Animate_UI_Materials.Editor
       if (b.context is not GraphicMaterialOverride materialOverride) return;
       materialOverride.SetMaterialDirty();
       EditorUtility.SetDirty(materialOverride);
+    }
+
+
+    [MenuItem("CONTEXT/MonoBehaviour/Bake Material Variant", true)]
+    static bool BakeMaterialVariantValidator(MenuCommand b)
+    {
+      return b.context is IMaterialModifier;
+    }
+
+    /// <summary>
+    /// Ask the Graphic component to reload the modified material
+    /// </summary>
+    [MenuItem("CONTEXT/MonoBehaviour/Bake Material Variant")]
+    static void BakeMaterialVariant(MenuCommand b)
+    {
+      if (b.context is not IMaterialModifier) return;
+      if (b.context is not Component materialModifier) return;
+
+      if (materialModifier.TryGetComponent(out Graphic materialSource) == false)
+      {
+        Debug.LogWarning("Cannot find associated Graphic");
+        return;
+      }
+
+      Material original = materialSource.material;
+      Material modified = materialSource.materialForRendering;
+
+      Material asset = new (modified);
+
+#if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
+      asset.parent = original;
+#endif
+      asset.hideFlags = HideFlags.None;
+
+      string path = GetMaterialVariantPath(original);
+
+      AssetDatabase.CreateAsset(asset, path);
+      EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<Material>(path));
+    }
+
+    static string GetMaterialVariantPath(Material original)
+    {
+      string path = null;
+      string name = original ? original.name : "Material";
+
+#if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
+      {
+
+        Material current = original;
+        while (path == null && current)
+        {
+          path = AssetDatabase.GetAssetPath(current);
+          current = current.parent;
+        }
+      }
+#else
+      if (original != null) path = AssetDatabase.GetAssetPath(original);
+#endif
+      path = Path.GetDirectoryName(path);
+      path ??= Application.dataPath;
+
+      path += $"/{name} Override.asset";
+
+      return AssetDatabase.GenerateUniqueAssetPath(path);
     }
 
     public override void OnInspectorGUI()
@@ -404,8 +469,8 @@ namespace Plugins.Animate_UI_Materials.Editor
     ///   If the information cannot be found, draw a color property
     /// </summary>
     /// <param name="material">The material holding the shader property</param>
-    /// <param name="propertyIndex">The index of the shader property</param>
     /// <param name="property">The serialized property in the modifier</param>
+    /// <param name="isHdr">If the property should be drawn as HDR</param>
     /// <param name="label">The label of the property</param>
     public static void DrawColorPropertyAsHdr(
       Material material,
@@ -457,11 +522,11 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// <exception cref="ArgumentOutOfRangeException">thrown when ShaderPropertyType is invalid</exception>
     void CreateNewModifier(Transform parent, Material material, ShaderPropertyInfo propertyInfo)
     {
-      GameObject child = new();
-      child.name = $"{propertyInfo.name} Override";
-      child.transform.SetParent(parent, false);
-
-      Undo.RegisterCreatedObjectUndo(child, $"Added override for property ${propertyInfo.name}");
+      // Increment undo group
+      Undo.IncrementCurrentGroup();
+      GameObject child = new($"{propertyInfo.name} Override");
+      Undo.RegisterCreatedObjectUndo(child, $"Added override gameobject");
+      Undo.SetTransformParent(child.transform, parent, false, "Moved override gameobject");
 
       GraphicPropertyOverride propertyOverride;
 
@@ -470,35 +535,36 @@ namespace Plugins.Animate_UI_Materials.Editor
       {
         case PropertyType.Color:
           // Add the appropriate component
-          propertyOverride = child.AddComponent<GraphicPropertyOverrideColor>();
+          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideColor>(child);
           // Set the override value to the current value of the material
           ((GraphicPropertyOverrideColor)propertyOverride).PropertyValue = material.GetColor(propertyInfo.name);
           break;
         case PropertyType.Vector:
-          propertyOverride = child.AddComponent<GraphicPropertyOverrideVector>();
+          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideVector>(child);
           ((GraphicPropertyOverrideVector)propertyOverride).PropertyValue = material.GetVector(propertyInfo.name);
           break;
         case PropertyType.Float:
-          propertyOverride = child.AddComponent<GraphicPropertyOverrideFloat>();
+          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideFloat>(child);
           ((GraphicPropertyOverrideFloat)propertyOverride).PropertyValue = material.GetFloat(propertyInfo.name);
           break;
         case PropertyType.Range:
-          propertyOverride = child.AddComponent<GraphicPropertyOverrideRange>();
+          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideRange>(child);
           ((GraphicPropertyOverrideRange)propertyOverride).PropertyValue = material.GetFloat(propertyInfo.name);
           break;
         case PropertyType.TexEnv:
-          propertyOverride = child.AddComponent<GraphicPropertyOverrideTexture>();
+          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideTexture>(child);
           ((GraphicPropertyOverrideTexture)propertyOverride).PropertyValue = material.GetTexture(propertyInfo.name);
           break;
         case PropertyType.Int:
-          propertyOverride = child.AddComponent<GraphicPropertyOverrideInt>();
+          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideInt>(child);
           ((GraphicPropertyOverrideInt)propertyOverride).PropertyValue = material.GetInteger(propertyInfo.name);
           break;
         default:
           throw new ArgumentOutOfRangeException();
       }
-
       propertyOverride.PropertyName = propertyInfo.name;
+      Undo.RegisterCompleteObjectUndo(child, "Added override component");
+      Undo.SetCurrentGroupName($"Override ${propertyInfo.name}");
     }
 
     /// <summary>
@@ -509,9 +575,7 @@ namespace Plugins.Animate_UI_Materials.Editor
     {
       GraphicMaterialOverride graphicMaterialOverride = (GraphicMaterialOverride)target;
 
-      if (!graphicMaterialOverride.TryGetComponent(out Graphic graphic)) return null;
-
-      return graphic.material;
+      return graphicMaterialOverride.TryGetComponent(out Graphic graphic) ? graphic.material : null;
     }
   }
 }
