@@ -95,13 +95,14 @@ namespace Plugins.Animate_UI_Materials.Editor
 
       return animated switch
       {
-        GraphicPropertyOverrideColor => PropertyType.Color,
-        GraphicPropertyOverrideFloat => PropertyType.Float,
-        GraphicPropertyOverrideVector => PropertyType.Vector,
-        GraphicPropertyOverrideInt => PropertyType.Int,
-        GraphicPropertyOverrideRange => PropertyType.Range,
+        GraphicPropertyOverrideColor   => PropertyType.Color,
+        GraphicPropertyOverrideFloat   => PropertyType.Float,
+        GraphicPropertyOverrideVector  => PropertyType.Vector,
+        GraphicPropertyOverrideInt     => PropertyType.Int,
+        GraphicPropertyOverrideRange   => PropertyType.Range,
         GraphicPropertyOverrideTexture => PropertyType.TexEnv,
-        _ => throw new Exception($"Unknown type {target?.GetType()}")
+        _ when target != null          => throw new Exception($"Unknown type {target.GetType()}"),
+        _                              => throw new Exception($"Target is null"),
       };
     }
 
