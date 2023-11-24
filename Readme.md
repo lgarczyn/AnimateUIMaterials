@@ -108,6 +108,10 @@ Alternatively, hit the **Record** button, and simply modify the properties from 
 
 ![alt_text](images/image13.png "image_tooltip")
 
+# Baking
+
+To get the final modified material as a material asset, simply open the context menu of your GraphicMaterialOverride or Graphic and press "Bake Modified Material". A new material variant will be saved alongside the source material.
+
 # Next Steps
 
 ## Emulate an actual MaterialEditor
@@ -117,10 +121,6 @@ I want to support custom materials drawers, and other possible combinations, whi
 https://discussions.unity.com/t/edit-chosen-material-in-the-inspector-for-custom-editor/67530/3
 
 This is required as MaterialEditor does a lot of closed-source heavy lifting to recover that attribute data, and because those attribute drawer require a reference to the MaterialEditor 
-
-## Baking custom materials
-
-Since there is is a slight overhead to using this script, especially for non-animated materials, being able to easily convert an override into an asset would be nice
 
 # End Notes
 
