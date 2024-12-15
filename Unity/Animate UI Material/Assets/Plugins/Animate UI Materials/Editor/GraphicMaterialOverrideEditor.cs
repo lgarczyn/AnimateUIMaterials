@@ -487,6 +487,27 @@ namespace Plugins.Animate_UI_Materials.Editor
       property.colorValue = EditorGUILayout.ColorField(label, property.colorValue, true, true, isHdr);
     }
 
+    static readonly (string, string)[] LowerPropertyStrings =
+    {
+      ("_StencilComp", "UI Hidden Properties/StencilComp"),
+      ("_Stencil", "UI Hidden Properties/Stencil"),
+      ("_StencilOp", "UI Hidden Properties/StencilOp"),
+      ("_StencilWriteMask", "UI Hidden Properties/StencilWriteMask"),
+      ("_StencilReadMask", "UI Hidden Properties/StencilReadMask"),
+      ("_ColorMask", "UI Hidden Properties/ColorMask"),
+      ("_UseUIAlphaClip", "UI Hidden Properties/UseUIAlphaClip"),
+    };
+
+    static string GetPropertyName(ShaderPropertyInfo prop)
+    {
+      foreach (var (lower, upper) in LowerPropertyStrings)
+      {
+        if (prop.name == lower) return upper;
+      }
+
+      return prop.name;
+    }
+
     /// <summary>
     ///   Display a dropdown to select a modifier
     ///   Filters out modifiers that are already added
@@ -506,7 +527,8 @@ namespace Plugins.Animate_UI_Materials.Editor
                                                               .Where(p => !namesAlreadyUsed.Contains(p.name))
                                                               .ToList();
 
-      string[] propertyNames = properties.Select(p => p.name).ToArray();
+      string[] propertyNames = properties.Select(GetPropertyName).ToArray();
+
       int selectedIndex = EditorGUILayout.Popup(new GUIContent("Add Override"), -1, propertyNames);
 
       if (selectedIndex >= 0) return properties[selectedIndex];
