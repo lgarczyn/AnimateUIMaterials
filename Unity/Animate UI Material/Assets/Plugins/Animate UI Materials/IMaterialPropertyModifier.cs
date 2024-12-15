@@ -12,7 +12,12 @@ namespace Plugins.Animate_UI_Materials
     /// <summary>
     ///   The "enabled" value of the modifier component
     /// </summary>
-    bool enabled { get; }
+    bool enabled { get; set;  }
+
+    /// <summary>
+    ///   The "gameObject" value of the modifier component
+    /// </summary>
+    GameObject gameObject { get; }
 
     /// <summary>
     ///   Apply the modified property to the material
