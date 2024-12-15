@@ -71,8 +71,12 @@ namespace Plugins.Animate_UI_Materials
       // Iterate over all active modifiers
       foreach (IMaterialPropertyModifier modifier in GetModifiers())
       {
-        // Apply the property to the new material
-        modifier.ApplyModifiedProperty(modifiedMaterial);
+        // Ignore un-init modifiers
+        if (!string.IsNullOrEmpty(modifier.PropertyName))
+        {
+          // Apply the property to the new material
+          modifier.ApplyModifiedProperty(modifiedMaterial);
+        }
       }
     }
   }
