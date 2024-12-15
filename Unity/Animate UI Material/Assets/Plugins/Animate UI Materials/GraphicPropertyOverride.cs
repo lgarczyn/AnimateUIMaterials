@@ -17,6 +17,8 @@ namespace Plugins.Animate_UI_Materials
     /// </summary>
     [SerializeField] protected string propertyName;
 
+    public virtual string DisplayName => propertyName;
+
     /// <summary>
     /// The id of the shader property
     /// </summary>

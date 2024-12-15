@@ -7,7 +7,12 @@ namespace Plugins.Animate_UI_Materials
     /// <summary>
     ///   The name of the shader property that the modifier affects
     /// </summary>
-    string PropertyName { get; set; }
+    string PropertyName { get; }
+
+    /// <summary>
+    ///   The display name of the modifier component for the editor
+    /// </summary>
+    string DisplayName { get; }
 
     /// <summary>
     ///   The "enabled" value of the modifier component
