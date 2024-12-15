@@ -9,7 +9,7 @@ Shader "Animate UI Material/Example"
         _Color ("Tint", Color) = (1,1,1,1)
 
         _OverlayTex ("Overlay", 2D) = "white" {}
-        _OverlayColor ("Overlay Color", Color) = (1, 1, 1, 1)
+        [HDR]_OverlayColor ("Overlay Color", Color) = (1, 1, 1, 1)
         _Scale ("Scale", Range(0, 2)) = 1
         _Rotation ("Rotation", Range(0, 360)) = 0
         _Offset ("Offset", Vector) = (0, 0, 0, 0)
