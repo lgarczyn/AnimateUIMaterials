@@ -30,8 +30,8 @@ namespace Plugins.Animate_UI_Materials
       {
         DestroyBuffer();
 
-          // Create a child material of the original
-        Material modifiedMaterial = new (baseMaterial.shader)
+        // Create a child material of the original
+        Material modifiedMaterial = new(baseMaterial.shader)
         {
           // Set a new name, to warn about editor modifications
           name = $"{baseMaterial.name} OVERRIDE",
@@ -42,6 +42,7 @@ namespace Plugins.Animate_UI_Materials
 #endif
         _bufferedMaterial = modifiedMaterial;
       }
+
       _bufferedMaterial.CopyPropertiesFromMaterial(baseMaterial);
       ModifyMaterial(_bufferedMaterial);
       return _bufferedMaterial;
@@ -65,6 +66,23 @@ namespace Plugins.Animate_UI_Materials
     void OnDestroy()
     {
       DestroyBuffer();
+    }
+
+    public Material GetEditorMaterial(Material baseMaterial)
+    {
+      // Create a child material of the original
+      Material modifiedMaterial = new(baseMaterial.shader)
+      {
+        // Set a new name, to warn about editor modifications
+        name = $"{baseMaterial.name} EDITOR",
+        hideFlags = HideFlags.HideAndDontSave,
+      };
+#if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
+      modifiedMaterial.parent = baseMaterial;
+#endif
+      modifiedMaterial.CopyPropertiesFromMaterial(baseMaterial);
+      ModifyMaterial(modifiedMaterial);
+      return modifiedMaterial;
     }
   }
 }
