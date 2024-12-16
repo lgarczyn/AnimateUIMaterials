@@ -89,20 +89,21 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// Get the property type from the target object
     /// </summary>
     /// <returns></returns>
-    protected virtual PropertyType GetPropertyType()
+    protected PropertyType GetPropertyType()
     {
       GraphicPropertyOverride animated = (GraphicPropertyOverride)target;
 
       return animated switch
       {
-        GraphicPropertyOverrideColor   => PropertyType.Color,
-        GraphicPropertyOverrideFloat   => PropertyType.Float,
-        GraphicPropertyOverrideVector  => PropertyType.Vector,
-        GraphicPropertyOverrideInt     => PropertyType.Int,
-        GraphicPropertyOverrideRange   => PropertyType.Range,
-        GraphicPropertyOverrideTexture => PropertyType.TexEnv,
-        _ when target != null          => throw new Exception($"Unknown type {target.GetType()}"),
-        _                              => throw new Exception($"Target is null"),
+        GraphicPropertyOverrideColor          => PropertyType.Color,
+        GraphicPropertyOverrideFloat          => PropertyType.Float,
+        GraphicPropertyOverrideVector         => PropertyType.Vector,
+        GraphicPropertyOverrideInt            => PropertyType.Int,
+        GraphicPropertyOverrideRange          => PropertyType.Range,
+        GraphicPropertyOverrideTexture        => PropertyType.TexEnv,
+        GraphicPropertyOverrideScaleAndOffset => PropertyType.TexEnv,
+        _ when target != null                 => throw new Exception($"Unknown type {target.GetType()}"),
+        _                                     => throw new Exception($"Target is null"),
       };
     }
 

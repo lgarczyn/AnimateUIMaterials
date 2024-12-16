@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using Plugins.Animate_UI_Materials.EditorExtensions;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -19,6 +22,18 @@ namespace Plugins.Animate_UI_Materials.Editor
     ///   Usually not needed, but good to have
     /// </summary>
     Vector2 _scrollPosition;
+
+    /// <summary>
+    /// A fake material used to create an inspector
+    /// </summary>
+    Material _editorMaterial;
+
+    Object[] _editorMaterialArray;
+
+    /// <summary>
+    /// The editor of the fake material
+    /// </summary>
+    MaterialEditor _editorMaterialEditor;
 
     /// <summary>
     ///   Override the reset context menu to implement the reset function
@@ -41,7 +56,7 @@ namespace Plugins.Animate_UI_Materials.Editor
         PrefabUtility.RecordPrefabInstancePropertyModifications((Object)modifier);
       }
     }
-    
+
     /// <summary>
     /// Ask the Graphic component to reload the modified material
     /// </summary>
@@ -52,7 +67,6 @@ namespace Plugins.Animate_UI_Materials.Editor
       materialOverride.SetMaterialDirty();
       EditorUtility.SetDirty(materialOverride);
     }
-
 
     [MenuItem("CONTEXT/MonoBehaviour/Bake Material Variant", true)]
     static bool BakeMaterialVariantValidator(MenuCommand b)
@@ -78,11 +92,11 @@ namespace Plugins.Animate_UI_Materials.Editor
       Material original = materialSource.material;
       Material modified = materialSource.materialForRendering;
 
-      Material asset = new (modified);
+      Material asset = new(modified);
 
-#if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
-      asset.parent = original;
-#endif
+  #if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
+        asset.parent = original;
+  #endif
       asset.hideFlags = HideFlags.None;
 
       string path = GetMaterialVariantPath(original);
@@ -96,19 +110,19 @@ namespace Plugins.Animate_UI_Materials.Editor
       string path = null;
       string name = original ? original.name : "Material";
 
-#if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
-      {
-
-        Material current = original;
-        while (path == null && current)
+  #if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
         {
-          path = AssetDatabase.GetAssetPath(current);
-          current = current.parent;
+
+          Material current = original;
+          while (path == null && current)
+          {
+            path = AssetDatabase.GetAssetPath(current);
+            current = current.parent;
+          }
         }
-      }
-#else
+  #else
       if (original != null) path = AssetDatabase.GetAssetPath(original);
-#endif
+  #endif
       path = Path.GetDirectoryName(path);
       path ??= Application.dataPath;
 
@@ -125,24 +139,43 @@ namespace Plugins.Animate_UI_Materials.Editor
       GraphicMaterialOverride materialOverride = (GraphicMaterialOverride)target;
 
       if (materialOverride.GetComponent<Graphic>() == null)
-        EditorGUILayout.HelpBox("Cannot find any sibling UI element. Add a UI element to use this component",
+        EditorGUILayout.HelpBox(
+          "Cannot find any sibling UI element. Add a UI element to use this component",
           MessageType.Warning);
       else if (GetTargetMaterial() == null)
-        EditorGUILayout.HelpBox("Cannot find any material. Add a material to the UI element to use this component",
+        EditorGUILayout.HelpBox(
+          "Cannot find any material. Add a material to the UI element to use this component",
           MessageType.Warning);
 
+      Material baseMaterial = GetTargetMaterial();
+      if (baseMaterial == null) return;
+
+      if (!_editorMaterial)
+      {
+        _editorMaterial = materialOverride.GetEditorMaterial(GetTargetMaterial());
+        _editorMaterialArray = new Object[] { _editorMaterial };
+      }
+
+      InternalEditorUtility.SetIsInspectorExpanded(_editorMaterial, true);
+
+      if (!_editorMaterialEditor || _editorMaterialEditor.target != _editorMaterial)
+        _editorMaterialEditor = CreateEditor(_editorMaterial) as MaterialEditor;
+
+      var properties = ShaderPropertyInfo.GetMaterialProperties(baseMaterial);
+      var names = properties.Select(p => p.name).ToList();
+
       // Get the active modifiers
-      List<IMaterialPropertyModifier> modifiers = materialOverride.GetModifiers(true).ToList();
+      List<IMaterialPropertyModifier> modifiers = materialOverride
+                                                 .GetModifiers(true)
+                                                 .OrderBy(m => names.IndexOf(m.PropertyName))
+                                                 .ToList();
+
       // Display the current modifier values
       DisplayModifiers(modifiers);
       // Use a popup to create new modifiers
-      ShaderPropertyInfo newProperty = DisplayCreationPopup(modifiers);
 
-      if (newProperty != null)
-        CreateNewModifier(
-          materialOverride.transform,
-          GetTargetMaterial(),
-          newProperty);
+      if (DisplayCreationPopup(modifiers, properties) is { } toCreate)
+        CreateNewModifier(materialOverride.transform, toCreate);
     }
 
     /// <summary>
@@ -159,18 +192,22 @@ namespace Plugins.Animate_UI_Materials.Editor
       using GUILayout.ScrollViewScope scrollViewScope = new(_scrollPosition);
       using GUILayout.HorizontalScope horizontalScope = new();
 
-      // Draw every active modifiers
-      // Draw the toggles column
-      ForEachParameterVertical(modifiers, DrawModifierToggle, 16f);
-      // Draw the name columns
-      ForEachParameterVertical(modifiers, DrawModifierReadOnlyValues, 0f);
+      ForEachParameterVertical(modifiers, DrawModifier);
+    }
 
-      // Draw the value toggles
-      // Change the label width to allow a float slider with a small width
-      ForEachParameterVertical(modifiers, DrawModifierValue, 300f, 16f);
+    /// <summary>
+    /// Returns the heights of each modifiers as a list
+    /// </summary>
+    /// <param name="modifiers"> The modifiers to get the heights of</param>
+    /// <returns></returns>
+    List<float> GetModifiersHeights(List<IMaterialPropertyModifier> modifiers)
+    {
+      Object[] targetMat = _editorMaterialArray;
 
-      // Draw the menu button
-      ForEachParameterVertical(modifiers, DrawModifierKebabMenu, 16f);
+      return modifiers.Select(m => m.PropertyName)
+                      .Select(n => MaterialEditor.GetMaterialProperty(targetMat, n))
+                      .Select(_editorMaterialEditor.GetPropertyHeight)
+                      .ToList();
     }
 
     /// <summary>
@@ -178,37 +215,24 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// </summary>
     /// <param name="modifiers">The modifiers to draw</param>
     /// <param name="action">The draw function for a modifier property</param>
-    /// <param name="width">The width of the column</param>
-    /// <param name="labelWidth">The width of labels in the column</param>
     static void ForEachParameterVertical(
-      List<IMaterialPropertyModifier> modifiers,
-      Action<IMaterialPropertyModifier> action,
-      float width = 150f,
-      float labelWidth = 0f
+      List<IMaterialPropertyModifier>   modifiers,
+      Action<IMaterialPropertyModifier> action
     )
     {
-      EditorGUIUtility.labelWidth = labelWidth;
-      using EditorGUILayout.VerticalScope scope = new(GUILayout.Width(width));
-      foreach (IMaterialPropertyModifier param in modifiers) action(param);
-      // Reset the label width
-      EditorGUIUtility.labelWidth = 0f;
+      using EditorGUILayout.VerticalScope scope = new();
+      foreach (IMaterialPropertyModifier modifier in modifiers)
+      {
+        using GUILayout.HorizontalScope hScope = new();
+        action(modifier);
+      }
     }
 
-    /// <summary>
-    /// If used right clicked, the context menu for one modifier
-    /// </summary>
-    /// <param name="modifier"></param>
-    void CaptureRightClick(IMaterialPropertyModifier modifier)
+    void DrawModifier(IMaterialPropertyModifier modifier)
     {
-      // Don't capture event if sliders are active
-      if (GUIUtility.hotControl != 0) return;
-      if (Event.current.type == EventType.MouseDown &&
-          Event.current.button == 1 &&
-          GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
-      {
-        DrawModifierContextMenu(modifier);
-        Event.current.Use();
-      }
+      DrawModifierToggle(modifier);
+      DrawModifierKebabMenu(modifier);
+      DrawModifierValue(modifier);
     }
 
     // The cached style of the kebab menu button
@@ -224,77 +248,11 @@ namespace Plugins.Animate_UI_Materials.Editor
       {
         _kebabMenuStyle = new GUIStyle(GUI.skin.GetStyle("PaneOptions"));
         // Force the height of the button
-        _kebabMenuStyle.fixedHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+        _kebabMenuStyle.fixedHeight = EditorGUIUtility.singleLineHeight;
+        _kebabMenuStyle.margin = new RectOffset(0, 0, 3, 0);
       }
 
       if (GUILayout.Button("", _kebabMenuStyle)) DrawModifierContextMenu(modifier);
-    }
-
-    /// <summary>
-    ///   Draw the context menu for one modifier
-    /// </summary>
-    /// <param name="modifier"></param>
-    void DrawModifierContextMenu(IMaterialPropertyModifier modifier)
-    {
-      MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
-      GenericMenu menu = new();
-      if (modifierComponent.isActiveAndEnabled)
-        menu.AddItem(new GUIContent("Disable"), false, () => ModifierSetActive(modifierComponent, false));
-      else
-        menu.AddItem(new GUIContent("Enable"), false, () => ModifierSetActive(modifierComponent, true));
-      menu.AddItem(new GUIContent("Reset"), false, () => ResetModifier(modifierComponent));
-      menu.AddItem(new GUIContent("Delete"), false, () => DeleteModifier(modifierComponent));
-      menu.ShowAsContext();
-    }
-
-    /// <summary>
-    /// Reset a modifier object to the default material value and record an undo
-    /// </summary>
-    /// <param name="modifier"></param>
-    void ResetModifier(MonoBehaviour modifier)
-    {
-      IMaterialPropertyModifier modifierInterface = (IMaterialPropertyModifier)modifier;
-      Undo.RecordObject(modifier, "Reset modifier component");
-
-      modifierInterface.ResetPropertyToDefault();
-
-      PrefabUtility.RecordPrefabInstancePropertyModifications(modifier);
-    }
-
-    /// <summary>
-    /// Delete the GameObject of a modifier and record an Undo
-    /// </summary>
-    /// <param name="modifier"></param>
-    void DeleteModifier(MonoBehaviour modifier)
-    {
-      Undo.DestroyObjectImmediate(modifier.gameObject);
-    }
-
-    /// <summary>
-    /// Set the active state of a modifier and its GameObject
-    /// Records an undo
-    /// </summary>
-    /// <param name="modifier"></param>
-    /// <param name="isActive"></param>
-    void ModifierSetActive(MonoBehaviour modifier, bool isActive)
-    {
-      // Make sure any modifications are properly propagated to unity
-      Undo.RecordObjects(new Object[] { modifier, modifier.gameObject },
-        "Toggled modifier component");
-      // If enabling, set the component and GameObject as active
-      if (isActive)
-      {
-        modifier.enabled = true;
-        modifier.gameObject.SetActive(true);
-      }
-      // If disabling, disable the GameObject only
-      else
-      {
-        modifier.gameObject.SetActive(false);
-      }
-
-      PrefabUtility.RecordPrefabInstancePropertyModifications(modifier);
-      PrefabUtility.RecordPrefabInstancePropertyModifications(modifier.gameObject);
     }
 
     /// <summary>
@@ -303,48 +261,12 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// <param name="modifier">The modifier component</param>
     void DrawModifierToggle(IMaterialPropertyModifier modifier)
     {
-      MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
-      // Start checking for changes
-      EditorGUI.BeginChangeCheck();
-      // Draw the toggle with limited width
-      bool isActive = EditorGUILayout.Toggle(
-        modifierComponent.isActiveAndEnabled, 
-        GUILayout.Width(16f),
-        GUILayout.Height(EditorGUIUtility.singleLineHeight));
-      // If changes happened
-      if (EditorGUI.EndChangeCheck()) ModifierSetActive(modifierComponent, isActive);
-    }
-
-    /// <summary>
-    ///   Draw the reference to the modifier and the property name
-    /// </summary>
-    /// <param name="modifier">The target property modifier</param>
-    void DrawModifierReadOnlyValues(IMaterialPropertyModifier modifier)
-    {
-      // Start a horizontal scope
-      using EditorGUILayout.HorizontalScope horizontalScope = new();
-      {
-        MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
-        // Create a "link" field to the modifier object
-        if (GUILayout.Button(
-              "↗",
-              GUILayout.Width(20f),
-              GUILayout.Height(EditorGUIUtility.singleLineHeight)))
-        {
-          Selection.activeGameObject = modifierComponent.gameObject;
-        }
-        // In a scope so that CaptureRightClick can get the correct rect
-        {
-          // Disable read-only fields, as they should not be modified here
-          using EditorGUI.DisabledScope disabledScope = new(true);
-          // Display the modifier property name
-          EditorGUILayout.TextField(
-            modifier.PropertyName, 
-            GUILayout.Height(EditorGUIUtility.singleLineHeight));
-        }
-      }
-      // Capture right clicks over this area
-      CaptureRightClick(modifier);
+      GameObject targetObject = modifier.gameObject;
+      SerializedObject targetSO = new(targetObject);
+      SerializedProperty activeProp = targetSO.FindProperty("m_IsActive");
+      EditorGUI.ChangeCheckScope scope = new();
+      EditorGUILayout.PropertyField(activeProp, GUIContent.none, false, GUILayout.MaxWidth(16f));
+      if (scope.changed) targetSO.ApplyModifiedProperties();
     }
 
     /// <summary>
@@ -358,83 +280,164 @@ namespace Plugins.Animate_UI_Materials.Editor
       EditorGUI.BeginChangeCheck();
       // Create a serialized object on the modifier, to display it properly
       SerializedObject obj = new(modifierComponent);
-      // For floats, add a label to allow "sliding" the cursor
-      string propertyLabel = modifier is GraphicPropertyOverrideFloat ? "⇔" : "";
       // Get the serialized property
       SerializedProperty property = obj.FindProperty("propertyValue");
-      // If property is of type range, display a custom drawer
-      if (modifier is GraphicPropertyOverrideRange range) DrawModifierRange(range, property);
-      // If property is of type color, display a color field
-      else if (modifier is GraphicPropertyOverrideColor color) DrawModifierColor(color, property);
-      // If property is of type vector, ...
-      else if (modifier is GraphicPropertyOverrideVector) DrawModifierVector(property);
-      // Otherwise, just use the property field
-      else EditorGUILayout.PropertyField(property, new GUIContent(propertyLabel));
-      // If any change was applied
-      if (EditorGUI.EndChangeCheck())
+
+      try
       {
-        // Record an undo
-        Undo.RecordObject(modifierComponent, $"Modified property override {modifier.PropertyName}");
-        // If we are in a prefab, ensure unity knows about the modification
-        PrefabUtility.RecordPrefabInstancePropertyModifications(modifierComponent);
-        // Apply the modified property
-        obj.ApplyModifiedProperties();
+        EditorGUIUtility.fieldWidth = 64f;
+        DrawMaterialProperty(modifier, property);
+        EditorGUIUtility.fieldWidth = -1;
       }
+      catch (Exception e)
+      {
+        EditorGUIUtility.fieldWidth = -1;
+        DrawFallbackProperty(modifier, property);
+      }
+
+      // If no change was applied, ignore storage
+      if (!EditorGUI.EndChangeCheck()) return;
+      // Set the serialized property from the current prop
+      // Record an undo
+      Undo.RecordObject(modifierComponent, $"Modified property override {modifier.PropertyName}");
+      // If we are in a prefab, ensure unity knows about the modification
+      PrefabUtility.RecordPrefabInstancePropertyModifications(modifierComponent);
+      // Apply the modified property
+      obj.ApplyModifiedProperties();
+    }
+
+    void DrawFallbackProperty(IMaterialPropertyModifier modifier, SerializedProperty property)
+    {
+      GUI.backgroundColor = new Color(1, 0.5f, 0);
+      EditorGUILayout.PropertyField(property, new GUIContent(modifier.PropertyName));
+      GUI.backgroundColor = Color.white;
+    }
+
+    FieldInfo _materialPropertyFlagsField =
+      typeof(MaterialProperty).GetField("m_Flags", BindingFlags.NonPublic | BindingFlags.Instance);
+
+    void DrawMaterialProperty(
+      IMaterialPropertyModifier modifier,
+      SerializedProperty        property
+    )
+    {
+      // Get the actual Shader Property
+      MaterialProperty materialProperty = MaterialEditor.GetMaterialProperty(_editorMaterialArray, modifier.PropertyName);
+
+      MaterialProperty.PropFlags oldFlags = materialProperty.flags;
+      MaterialProperty.PropFlags flags = oldFlags;
+
+      // Hide the scale offset in the texture property drawer
+      if (modifier is GraphicPropertyOverrideTexture or GraphicPropertyOverrideScaleAndOffset)
+      {
+        bool wantsScaleOffset = modifier is GraphicPropertyOverrideScaleAndOffset;
+
+        flags &= ~MaterialProperty.PropFlags.NoScaleOffset;
+
+        if (!wantsScaleOffset)
+          flags |= MaterialProperty.PropFlags.NoScaleOffset;
+      }
+
+      flags &= ~MaterialProperty.PropFlags.PerRendererData;
+
+      if (oldFlags != flags)
+      {
+        _materialPropertyFlagsField.SetValue(materialProperty, (int)flags);
+      }
+
+      // Asset correct property type
+      SerializedMaterialPropertyUtility.AssertTypeEqual(property, materialProperty);
+      // Set the buffer shader property to our current value
+      SerializedMaterialPropertyUtility.CopyProperty(materialProperty, property);
+      // Get the height needed to render
+      float height = _editorMaterialEditor.GetPropertyHeight(materialProperty);
+
+      // Get the control rect
+      Rect rect = EditorGUILayout.GetControlRect(true, height);
+      using EditorGUI.PropertyScope scope = new(rect, new GUIContent(modifier.DisplayName), property);
+
+      // Set the animator colored backgrounds
+      if (GraphicMaterialOverrideHelper.OverridePropertyColor(materialProperty, (Object)modifier, out Color background))
+      {
+        GUI.backgroundColor = background;
+      }
+
+      // Draw the property using the hidden editor
+      _editorMaterialEditor.ShaderProperty(rect, materialProperty, scope.content, 0);
+
+      // Reset the background color
+      GUI.backgroundColor = Color.white;
+      // Place the result in the SerializedProperty
+      SerializedMaterialPropertyUtility.CopyProperty(property, materialProperty);
     }
 
     /// <summary>
-    ///   Retrieve shader property information and try to draw a range field
+    ///   Draw the context menu for one modifier
     /// </summary>
-    /// <param name="modifier">The target IMaterialPropertyModifier</param>
-    /// <param name="property">The serialized property of the value</param>
-    void DrawModifierRange(GraphicPropertyOverrideRange modifier, SerializedProperty property)
+    /// <param name="modifier"></param>
+    void DrawModifierContextMenu(IMaterialPropertyModifier modifier)
     {
-      Material mat = GetTargetMaterial();
-      string propName = modifier.PropertyName;
-      int index = ShaderPropertyInfo.GetMaterialProperties(mat)
-                                    .Find(p => p.name == propName)
-                                    ?.index ??
-                  -1;
+      MonoBehaviour modifierComponent = (MonoBehaviour)modifier;
+      GenericMenu menu = new();
+      menu.AddItem(new GUIContent("Select"),      false, () => Selection.activeGameObject = modifierComponent.gameObject);
+      menu.AddItem(new GUIContent("Set Default"), false, () => ResetModifier(modifier));
+      if (modifierComponent.isActiveAndEnabled)
+        menu.AddItem(new GUIContent("Disable"), false, () => ModifierSetActive(modifier, false));
+      else
+        menu.AddItem(new GUIContent("Enable"), false, () => ModifierSetActive(modifier, true));
 
-      DrawFloatPropertyAsRange(mat, index, property, new GUIContent(""));
+      menu.AddItem(new GUIContent("Delete"), false, () => DeleteModifier(modifier));
+      menu.ShowAsContext();
     }
 
     /// <summary>
-    ///   Retrieve shader property information and draw a color field
+    /// Reset a modifier object to the default material value and record an undo
     /// </summary>
-    /// <param name="modifier">The target IMaterialPropertyModifier</param>
-    /// <param name="property">The serialized property of the value</param>
-    void DrawModifierColor(GraphicPropertyOverrideColor modifier, SerializedProperty property)
+    /// <param name="modifier"></param>
+    void ResetModifier(IMaterialPropertyModifier modifier)
     {
-      SerializedProperty hdrProp = property.serializedObject
-                                           .FindProperty(nameof(GraphicPropertyOverrideColor.isHDR));
-      
-      using EditorGUILayout.HorizontalScope horizontalScope = new();
-      
-      EditorGUILayout.PropertyField(hdrProp, new GUIContent(""), GUILayout.Width(16));
-      EditorGUILayout.LabelField(new GUIContent("HDR"), GUILayout.Width(32));
-        
-      DrawColorPropertyAsHdr(
-        GetTargetMaterial(),
-        property,
-        modifier.isHDR,
-        new GUIContent(""));
-    }
-    
-    /// <summary>
-    /// Draws a vector field for in a single line
-    /// </summary>
-    /// <param name="property">The Vector4 serialized property</param>
-    void DrawModifierVector(SerializedProperty property)
-    {
-      GUIContent[] contents = new[]{"X", "Y", "Z", "W"}.Select(l => new GUIContent(l)).ToArray();
+      Undo.RecordObject(modifier as Object, "Reset modifier component");
 
-      // Find the first child serialized property
-      SerializedProperty firstProperty = property.Copy();
-      firstProperty.NextVisible(true);
-      var position = EditorGUILayout.GetControlRect();
-      
-      EditorGUI.MultiPropertyField(position, contents, firstProperty, new GUIContent());
+      modifier.ResetPropertyToDefault();
+
+      PrefabUtility.RecordPrefabInstancePropertyModifications(modifier as Object);
+    }
+
+    /// <summary>
+    /// Delete the GameObject of a modifier and record an Undo
+    /// </summary>
+    /// <param name="modifier"></param>
+    void DeleteModifier(IMaterialPropertyModifier modifier)
+    {
+      Undo.DestroyObjectImmediate(modifier.gameObject);
+    }
+
+    /// <summary>
+    /// Set the active state of a modifier and its GameObject
+    /// Records an undo
+    /// </summary>
+    /// <param name="modifier"></param>
+    /// <param name="isActive"></param>
+    void ModifierSetActive(IMaterialPropertyModifier modifier, bool isActive)
+    {
+      // Make sure any modifications are properly propagated to unity
+      Undo.RecordObjects(
+        new[] { modifier as Object, modifier.gameObject },
+        "Toggled modifier component");
+      // If enabling, set the component and GameObject as active
+      if (isActive)
+      {
+        modifier.enabled = true;
+        modifier.gameObject.SetActive(true);
+      }
+      // If disabling, disable the GameObject only
+      else
+      {
+        modifier.gameObject.SetActive(false);
+      }
+
+      PrefabUtility.RecordPrefabInstancePropertyModifications(modifier as Object);
+      PrefabUtility.RecordPrefabInstancePropertyModifications(modifier.gameObject);
     }
 
     /// <summary>
@@ -446,10 +449,11 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// <param name="property">The serialized property in the modifier</param>
     /// <param name="label">The label of the property</param>
     public static void DrawFloatPropertyAsRange(
-      Material material,
-      int propertyIndex,
+      Material           material,
+      int                propertyIndex,
       SerializedProperty property,
-      GUIContent label)
+      GUIContent         label
+    )
     {
       if (!material || propertyIndex < 0)
       {
@@ -457,11 +461,24 @@ namespace Plugins.Animate_UI_Materials.Editor
         return;
       }
 
+      Rect rect = GUILayoutUtility.GetRect(
+        EditorGUIUtility.fieldWidth,
+        EditorGUIUtility.labelWidth + EditorGUIUtility.fieldWidth + 110f,
+        18f,
+        18f);
+
       Shader shader = material.shader;
       float min = ShaderUtil.GetRangeLimits(shader, propertyIndex, 1);
       float max = ShaderUtil.GetRangeLimits(shader, propertyIndex, 2);
 
-      EditorGUILayout.Slider(property, min, max, label);
+      using EditorGUI.PropertyScope scope = new(rect, label, property);
+      EditorGUI.BeginChangeCheck();
+      float newValue = EditorGUI.Slider(rect, "⇔", property.floatValue, min, max);
+      // Only assign the value back if it was actually changed by the user.
+      // Otherwise a single value will be assigned to all objects when multi-object editing,
+      // even when the user didn't touch the control.
+      if (EditorGUI.EndChangeCheck())
+        property.floatValue = newValue;
     }
 
     /// <summary>
@@ -473,10 +490,11 @@ namespace Plugins.Animate_UI_Materials.Editor
     /// <param name="isHdr">If the property should be drawn as HDR</param>
     /// <param name="label">The label of the property</param>
     public static void DrawColorPropertyAsHdr(
-      Material material,
+      Material           material,
       SerializedProperty property,
-      bool isHdr,
-      GUIContent label)
+      bool               isHdr,
+      GUIContent         label
+    )
     {
       if (!material)
       {
@@ -508,30 +526,69 @@ namespace Plugins.Animate_UI_Materials.Editor
       return prop.name;
     }
 
+    struct PropertyEntry
+    {
+      public string Name;
+      public string DisplayName;
+      public Type ComponentType;
+    }
+
     /// <summary>
     ///   Display a dropdown to select a modifier
     ///   Filters out modifiers that are already added
     /// </summary>
-    /// <param name="modifiers"></param>
     /// <returns></returns>
-    ShaderPropertyInfo DisplayCreationPopup(List<IMaterialPropertyModifier> modifiers)
+    PropertyEntry? DisplayCreationPopup(List<IMaterialPropertyModifier> modifiers, List<ShaderPropertyInfo> properties)
     {
       // Create a set to filter out modifiers that are already added
       HashSet<string> namesAlreadyUsed = modifiers
-                                         .Select(p => p.PropertyName)
-                                         .ToHashSet();
+                                        .Select(p => p.DisplayName)
+                                        .ToHashSet();
 
-      // Display a creation popup
-      Material material = GetTargetMaterial();
-      List<ShaderPropertyInfo> properties = ShaderPropertyInfo.GetMaterialProperties(material)
-                                                              .Where(p => !namesAlreadyUsed.Contains(p.name))
-                                                              .ToList();
+      List<PropertyEntry> entries = new();
 
-      string[] propertyNames = properties.Select(GetPropertyName).ToArray();
+      foreach (ShaderPropertyInfo info in properties)
+      {
+        if (!namesAlreadyUsed.Contains(info.name))
+        {
+          entries.Add(
+            new PropertyEntry
+            {
+              Name = info.name,
+              DisplayName = GetPropertyName(info),
+              ComponentType = info.type switch
+              {
+                PropertyType.Color  => typeof(GraphicPropertyOverrideColor),
+                PropertyType.Float  => typeof(GraphicPropertyOverrideFloat),
+                PropertyType.Range  => typeof(GraphicPropertyOverrideRange),
+                PropertyType.Vector => typeof(GraphicPropertyOverrideVector),
+                PropertyType.TexEnv => typeof(GraphicPropertyOverrideTexture),
+                _                   => throw new ArgumentOutOfRangeException(),
+              },
+            });
+        }
+
+        if (info.type == PropertyType.TexEnv)
+        {
+          string displayName = GetPropertyName(info) + " Scale Offset";
+          if (!namesAlreadyUsed.Contains(displayName))
+          {
+            entries.Add(
+              new PropertyEntry
+              {
+                Name = info.name,
+                DisplayName = displayName,
+                ComponentType = typeof(GraphicPropertyOverrideScaleAndOffset),
+              });
+          }
+        }
+      }
+
+      string[] propertyNames = entries.Select(e => e.DisplayName).ToArray();
 
       int selectedIndex = EditorGUILayout.Popup(new GUIContent("Add Override"), -1, propertyNames);
 
-      if (selectedIndex >= 0) return properties[selectedIndex];
+      if (selectedIndex >= 0) return entries[selectedIndex];
       return null;
     }
 
@@ -539,54 +596,25 @@ namespace Plugins.Animate_UI_Materials.Editor
     ///   Create a new GraphicPropertyOverride in a new child GameObject
     /// </summary>
     /// <param name="parent">The transform of the GraphicMaterialOverride</param>
-    /// <param name="material">The material to get the default value from</param>
     /// <param name="propertyInfo">The property to override</param>
     /// <exception cref="ArgumentOutOfRangeException">thrown when ShaderPropertyType is invalid</exception>
-    void CreateNewModifier(Transform parent, Material material, ShaderPropertyInfo propertyInfo)
+    void CreateNewModifier(Transform parent, PropertyEntry propertyInfo)
     {
       // Increment undo group
       Undo.IncrementCurrentGroup();
-      GameObject child = new($"{propertyInfo.name} Override");
-      Undo.RegisterCreatedObjectUndo(child, $"Added override gameobject");
-      Undo.SetTransformParent(child.transform, parent, false, "Moved override gameobject");
+      GameObject child = new($"{propertyInfo.DisplayName} Override");
 
-      GraphicPropertyOverride propertyOverride;
+      Undo.RegisterCreatedObjectUndo(child, $"Added override GameObject");
+      child.layer = parent.gameObject.layer;
+      Undo.SetTransformParent(child.transform, parent, false, "Moved override GameObject");
 
-      // For every possible property type
-      switch (propertyInfo.type)
-      {
-        case PropertyType.Color:
-          // Add the appropriate component
-          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideColor>(child);
-          // Set the override value to the current value of the material
-          ((GraphicPropertyOverrideColor)propertyOverride).PropertyValue = material.GetColor(propertyInfo.name);
-          break;
-        case PropertyType.Vector:
-          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideVector>(child);
-          ((GraphicPropertyOverrideVector)propertyOverride).PropertyValue = material.GetVector(propertyInfo.name);
-          break;
-        case PropertyType.Float:
-          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideFloat>(child);
-          ((GraphicPropertyOverrideFloat)propertyOverride).PropertyValue = material.GetFloat(propertyInfo.name);
-          break;
-        case PropertyType.Range:
-          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideRange>(child);
-          ((GraphicPropertyOverrideRange)propertyOverride).PropertyValue = material.GetFloat(propertyInfo.name);
-          break;
-        case PropertyType.TexEnv:
-          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideTexture>(child);
-          ((GraphicPropertyOverrideTexture)propertyOverride).PropertyValue = material.GetTexture(propertyInfo.name);
-          break;
-        case PropertyType.Int:
-          propertyOverride = Undo.AddComponent<GraphicPropertyOverrideInt>(child);
-          ((GraphicPropertyOverrideInt)propertyOverride).PropertyValue = material.GetInteger(propertyInfo.name);
-          break;
-        default:
-          throw new ArgumentOutOfRangeException();
-      }
-      propertyOverride.PropertyName = propertyInfo.name;
+      GraphicPropertyOverride propertyOverride =
+        Undo.AddComponent(child, propertyInfo.ComponentType) as GraphicPropertyOverride;
+      propertyOverride!.PropertyName = propertyInfo.Name;
+      propertyOverride.ResetPropertyToDefault();
+
       Undo.RegisterCompleteObjectUndo(child, "Added override component");
-      Undo.SetCurrentGroupName($"Override ${propertyInfo.name}");
+      Undo.SetCurrentGroupName($"Override ${propertyInfo.DisplayName}");
     }
 
     /// <summary>
