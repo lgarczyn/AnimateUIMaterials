@@ -289,8 +289,12 @@ namespace Plugins.Animate_UI_Materials.Editor
         DrawMaterialProperty(modifier, property);
         EditorGUIUtility.fieldWidth = -1;
       }
+      // e is used for debugging purposes
+#pragma warning disable CS0168 // Variable is declared but never used
       catch (Exception e)
+#pragma warning restore CS0168 // Variable is declared but never used
       {
+        // Put breakpoint here
         EditorGUIUtility.fieldWidth = -1;
         DrawFallbackProperty(modifier, property);
       }
