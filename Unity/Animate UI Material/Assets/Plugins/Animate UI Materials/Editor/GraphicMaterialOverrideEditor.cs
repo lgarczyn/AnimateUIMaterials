@@ -289,6 +289,10 @@ namespace Plugins.Animate_UI_Materials.Editor
         DrawMaterialProperty(modifier, property);
         EditorGUIUtility.fieldWidth = -1;
       }
+      catch (ExitGUIException e)
+      {
+        throw;
+      }
       // e is used for debugging purposes
 #pragma warning disable CS0168 // Variable is declared but never used
       catch (Exception e)
@@ -366,13 +370,18 @@ namespace Plugins.Animate_UI_Materials.Editor
         GUI.backgroundColor = background;
       }
 
+      using EditorGUI.ChangeCheckScope changes = new();
       // Draw the property using the hidden editor
       _editorMaterialEditor.ShaderProperty(rect, materialProperty, scope.content, 0);
 
       // Reset the background color
       GUI.backgroundColor = Color.white;
-      // Place the result in the SerializedProperty
-      SerializedMaterialPropertyUtility.CopyProperty(property, materialProperty);
+
+      if (changes.changed)
+      {
+        // Place the result in the SerializedProperty
+        SerializedMaterialPropertyUtility.CopyProperty(property, materialProperty);
+      }
     }
 
     /// <summary>
