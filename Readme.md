@@ -6,6 +6,8 @@
 
 **Animate UI Materials** allows editing and animating materials for a single UI component.
 
+![Example Video](images/video-1-3-0.gif "video_tooltip")
+
 # Installation
 
 This package required 2021.3 or later
