@@ -96,8 +96,12 @@ namespace Plugins.Animate_UI_Materials
                                               | HideFlags.NotEditable,
       };
       // Set parent if supported
+      // If masking is enabled, or another modifier is present, don't try to parent at all, since it causes issues in editor
 #if UNITY_2022_1_OR_NEWER && UNITY_EDITOR
-      modifiedMaterial.parent = realSource;
+      if (baseMaterial == realSource)
+      {
+        modifiedMaterial.parent = realSource;
+      }
 #endif
       return modifiedMaterial;
     }
