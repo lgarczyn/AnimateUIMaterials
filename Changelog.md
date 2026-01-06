@@ -1,3 +1,6 @@
+# 1.3.1
+* Fixed Masking in editor in 2022+
+* Made material preview readonly again
 
 # 1.3.0
 * Support custom shader property drawers
