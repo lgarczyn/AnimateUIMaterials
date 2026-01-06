@@ -1,4 +1,6 @@
-﻿namespace UnityEditor
+﻿using UnityEditor;
+
+namespace Plugins.Animate_UI_Materials.Editor
 {
  /// <summary>
  /// Broken implementation of MaterialEditor meant to be injected in a standard Editor
