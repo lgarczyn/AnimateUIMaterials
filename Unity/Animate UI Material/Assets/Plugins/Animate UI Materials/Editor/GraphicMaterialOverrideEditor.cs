@@ -289,7 +289,7 @@ namespace Plugins.Animate_UI_Materials.Editor
         DrawMaterialProperty(modifier, property);
         EditorGUIUtility.fieldWidth = -1;
       }
-      catch (ExitGUIException e)
+      catch (ExitGUIException)
       {
         throw;
       }
