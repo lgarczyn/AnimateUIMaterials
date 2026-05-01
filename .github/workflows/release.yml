@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New semver version (e.g. 1.3.2)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump package.json version
+        env:
+          NEW_VERSION: ${{ inputs.version }}
+        run: |
+          PKG="Unity/Animate UI Material/Assets/Plugins/Animate UI Materials/package.json"
+          jq --arg v "$NEW_VERSION" '.version = $v' "$PKG" > "$PKG.tmp" && mv "$PKG.tmp" "$PKG"
+
+      - name: Commit, tag, and push
+        env:
+          NEW_VERSION: ${{ inputs.version }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add "Unity/Animate UI Material/Assets/Plugins/Animate UI Materials/package.json"
+          git commit -m "Release $NEW_VERSION"
+          git tag "$NEW_VERSION"
+          git push origin HEAD
+          git push origin "refs/tags/$NEW_VERSION"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          generate_release_notes: true

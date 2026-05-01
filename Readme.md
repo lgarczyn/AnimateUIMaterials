@@ -14,7 +14,7 @@ This package required 2021.3 or later
 
 **Install with OpenUPM**
 
-`openupm add com.lgarczyn.animate-ui-material/`
+`openupm add com.lgarczyn.animate-ui-material`
 
 **Install with the Unity Package Manager**
 
@@ -23,7 +23,7 @@ This package required 2021.3 or later
  2. Open the Package Manager
  3. Press +
  4. Add Package from git URL
- 5. Enter `https://github.com/lgarczyn/AnimateUIMaterials.git`
+ 5. Enter `https://github.com/lgarczyn/AnimateUIMaterials.git?path=Unity/Animate%20UI%20Material/Assets/Plugins/Animate%20UI%20Materials`
 
 **Install With Asset Store**
 
