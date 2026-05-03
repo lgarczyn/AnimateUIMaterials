@@ -37,11 +37,26 @@ jobs:
         env:
           NEW_VERSION: ${{ inputs.version }}
         run: |
-          git add "Unity/Animate UI Material/Assets/Plugins/Animate UI Materials/package.json"
-          git commit -m "Release $NEW_VERSION"
-          git tag "$NEW_VERSION"
-          git push origin HEAD
-          git push origin "refs/tags/$NEW_VERSION"
+          set -euo pipefail
+          PKG="Unity/Animate UI Material/Assets/Plugins/Animate UI Materials/package.json"
+
+          # Commit only if the bump produced a real diff. Re-running the workflow against an
+          # already-released version is a no-op here — keep going so the upm side can finish.
+          if ! git diff --quiet -- "$PKG"; then
+            git add "$PKG"
+            git commit -m "Release $NEW_VERSION"
+            git push origin HEAD
+          else
+            echo "package.json already at $NEW_VERSION; nothing to commit"
+          fi
+
+          # Tag main only if the tag doesn't already exist.
+          if ! git rev-parse -q --verify "refs/tags/$NEW_VERSION" >/dev/null; then
+            git tag "$NEW_VERSION"
+            git push origin "refs/tags/$NEW_VERSION"
+          else
+            echo "Tag $NEW_VERSION already exists on main; skipping"
+          fi
 
       # ----- upm branch: rebuild from main, force-push, tag upm/<version> -----
       #
