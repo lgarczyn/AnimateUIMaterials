@@ -16,5 +16,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/lgarczyn/AnimateUIMaterials.git"
-  }
+  },
+  "samples": [
+    {
+      "displayName": "Examples",
+      "description": "Animated UI material example scene with shaders, textures, and an animation clip.",
+      "path": "Samples~/Examples"
+    }
+  ]
 }
