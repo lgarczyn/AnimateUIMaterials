@@ -1,3 +1,7 @@
+# 1.4.0
+* Added GraphicMaterialOverrideMirror to copy an existing running GraphicMaterialOverride
+* Cleaned folder structure
+
 # 1.3.1
 * Fixed Masking in editor in 2022+
 * Made material preview readonly again

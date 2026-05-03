@@ -23,7 +23,7 @@ This package required 2021.3 or later
  2. Open the Package Manager
  3. Press +
  4. Add Package from git URL
- 5. Enter `https://github.com/lgarczyn/AnimateUIMaterials.git?path=Unity/Animate%20UI%20Material/Assets/Plugins/Animate%20UI%20Materials`
+ 5. Enter `https://github.com/lgarczyn/AnimateUIMaterials.git#upm`
 
 **Install With Asset Store**
 
@@ -94,6 +94,12 @@ Alternatively, hit the **Record** button, and simply modify the properties from 
 # Baking
 
 To get the final modified material as a material asset, simply open the context menu of your GraphicMaterialOverride or Graphic and press "Bake Modified Material". A new material variant will be saved alongside the source material.
+
+# Sharing across Graphics
+
+To make several UI elements display the **same** animated material — sharing the work and batching into one draw call — add a **GraphicMaterialOverrideMirror** to each follower. As long as the followers and the source share the same base `Material` asset, the Mirror finds and reuses the modified instance automatically. To opt out of sharing, give an element a different material variant.
+
+Both Graphics must be at the same stencil Mask depth (RectMask2D is unaffected). The Mirror's inspector reports its current state.
 
 # End Notes
 
