@@ -56,10 +56,21 @@ namespace Plugins.Animate_UI_Materials
       _modifiers.Clear();
     }
 
-    // On enable and disable, update the target graphic
-    void OnEnable() => SetMaterialDirty();
+    // On enable, re-publish the cached override (if any) so mirrors pick it back up.
+    // On disable, clear it from the registry without destroying the buffer — leaving the
+    // material alive avoids leaving mirrors' CanvasRenderers holding a Unity-destroyed
+    // reference (which renders transparent until the next rebuild swaps it).
+    void OnEnable()
+    {
+      RegisterOverride();
+      SetMaterialDirty();
+    }
 
-    void OnDisable() => SetMaterialDirty();
+    void OnDisable()
+    {
+      UnregisterOverride();
+      SetMaterialDirty();
+    }
 
     /// <summary>
     /// Called by Graphic using the IMaterialModifier interface through the parent class

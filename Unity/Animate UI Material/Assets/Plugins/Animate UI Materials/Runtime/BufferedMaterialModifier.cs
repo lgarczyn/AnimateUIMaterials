@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Plugins.Animate_UI_Materials
@@ -33,6 +33,7 @@ namespace Plugins.Animate_UI_Materials
       // Return the base material if invalid or if this component is disabled
       if (!enabled || baseMaterial == null) return baseMaterial;
 
+      bool created = false;
       if (!_bufferedMaterial || _bufferedMaterial.shader != baseMaterial.shader || baseMaterial != _bufferedMaterialSource)
       {
         DestroyBuffer();
@@ -40,10 +41,14 @@ namespace Plugins.Animate_UI_Materials
         // Create a child material of the original
         _bufferedMaterial = CreateNewMaterial(baseMaterial, "OVERRIDE");
         _bufferedMaterialSource = baseMaterial;
+        created = true;
       }
 
       _bufferedMaterial.CopyPropertiesFromMaterial(baseMaterial);
       ModifyMaterial(_bufferedMaterial);
+
+      if (created) MaterialOverrideRegistry.Set(_bufferedMaterialSource, _bufferedMaterial);
+
       return _bufferedMaterial;
     }
 
@@ -106,10 +111,39 @@ namespace Plugins.Animate_UI_Materials
       return modifiedMaterial;
     }
 
-    void DestroyBuffer()
+    public void DestroyBuffer()
     {
-      if (Application.isPlaying) Destroy(_bufferedMaterial);
-      else DestroyImmediate(_bufferedMaterial);
+      // Notify subscribers that the override under our source key is going away.
+      if (_bufferedMaterialSource) MaterialOverrideRegistry.Set(_bufferedMaterialSource, null);
+
+      if (_bufferedMaterial)
+      {
+        if (Application.isPlaying) Destroy(_bufferedMaterial);
+        else DestroyImmediate(_bufferedMaterial);
+      }
+      _bufferedMaterial = null;
+      _bufferedMaterialSource = null;
+    }
+
+    /// <summary>
+    /// Republish the current buffered material under its source key. Call this after re-enabling
+    /// a previously-disabled modifier so mirrors pick the override back up. No-op when no buffer
+    /// has been created yet — the next GetModifiedMaterial will register naturally.
+    /// </summary>
+    protected void RegisterOverride()
+    {
+      if (_bufferedMaterial && _bufferedMaterialSource)
+        MaterialOverrideRegistry.Set(_bufferedMaterialSource, _bufferedMaterial);
+    }
+
+    /// <summary>
+    /// Clear the current override from the registry without destroying the buffered material.
+    /// Mirrors fall back to their base material on the next render. Cache survives so re-enabling
+    /// is cheap — just RegisterOverride() + SetMaterialDirty.
+    /// </summary>
+    protected void UnregisterOverride()
+    {
+      if (_bufferedMaterialSource) MaterialOverrideRegistry.Set(_bufferedMaterialSource, null);
     }
 
     /// <summary>
