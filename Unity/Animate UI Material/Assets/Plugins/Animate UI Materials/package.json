@@ -1,6 +1,6 @@
 {
   "name": "com.lgarczyn.animate-ui-material",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "displayName": "Animate UI Materials",
   "description": "Edit and animate materials for a single UI component without affecting other instances.",
   "unity": "2021.3",
