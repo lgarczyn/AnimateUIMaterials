@@ -1,3 +1,6 @@
+# 1.4.1
+* Fixed Unity warnings about missing .meta files for README/CHANGELOG/LICENSE in installed packages
+
 # 1.4.0
 * Added GraphicMaterialOverrideMirror to copy an existing running GraphicMaterialOverride
 * Cleaned folder structure

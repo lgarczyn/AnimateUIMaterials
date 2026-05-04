@@ -74,12 +74,6 @@ jobs:
             exit 1
           fi
 
-          # Capture repo-root documentation files (Package Manager UI shows these)
-          DOCS=$(mktemp -d)
-          [ -f "Readme.md"    ] && cp "Readme.md"    "$DOCS/README.md"
-          [ -f "Changelog.md" ] && cp "Changelog.md" "$DOCS/CHANGELOG.md"
-          [ -f "LICENSE"      ] && cp "LICENSE"      "$DOCS/LICENSE.md"
-
           # Snapshot the package contents
           STAGE=$(mktemp -d)
           cp -a "$PKG/." "$STAGE/"
@@ -90,13 +84,12 @@ jobs:
           # Wipe everything in the work tree except .git
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
-          # Restore package contents at the repo root
+          # Restore package contents at the repo root. README/CHANGELOG/LICENSE are NOT
+          # copied in — Package Manager UI links to the GitHub copies via the
+          # documentationUrl/changelogUrl/licensesUrl fields in package.json.
           cp -a "$STAGE/." .
 
-          # Drop in README/CHANGELOG/LICENSE at root for Package Manager UI tabs
-          cp -a "$DOCS/." .
-
-          rm -rf "$STAGE" "$DOCS"
+          rm -rf "$STAGE"
 
           # UPM folder-name conventions
           if [ -d "Examples" ]; then
