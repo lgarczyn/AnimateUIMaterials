@@ -97,7 +97,7 @@ To get the final modified material as a material asset, simply open the context 
 
 # Sharing across Graphics
 
-To make several UI elements display the **same** animated material — sharing the work and batching into one draw call — add a **GraphicMaterialOverrideMirror** to each follower. As long as the followers and the source share the same base `Material` asset, the Mirror finds and reuses the modified instance automatically. To opt out of sharing, give an element a different material variant.
+To share one animated material across several Graphics, add a **GraphicMaterialOverrideMirror** to each. They batch into one draw call. The Mirror finds the override through the shared base `Material` asset. Use a different material variant to opt out.
 
 Both Graphics must be at the same stencil Mask depth (RectMask2D is unaffected). The Mirror's inspector reports its current state.
 

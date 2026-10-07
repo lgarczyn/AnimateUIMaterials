@@ -24,8 +24,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-      # ----- main branch: bump, commit, tag -----
-
       - name: Bump package.json version
         env:
           NEW_VERSION: ${{ inputs.version }}
@@ -40,8 +38,7 @@ jobs:
           set -euo pipefail
           PKG="Unity/Animate UI Material/Assets/Plugins/Animate UI Materials/package.json"
 
-          # Commit only if the bump produced a real diff. Re-running the workflow against an
-          # already-released version is a no-op here — keep going so the upm side can finish.
+          # Allow re-runs to reach the upm steps
           if ! git diff --quiet -- "$PKG"; then
             git add "$PKG"
             git commit -m "Release $NEW_VERSION"
@@ -50,7 +47,6 @@ jobs:
             echo "package.json already at $NEW_VERSION; nothing to commit"
           fi
 
-          # Tag main only if the tag doesn't already exist.
           if ! git rev-parse -q --verify "refs/tags/$NEW_VERSION" >/dev/null; then
             git tag "$NEW_VERSION"
             git push origin "refs/tags/$NEW_VERSION"
@@ -58,11 +54,7 @@ jobs:
             echo "Tag $NEW_VERSION already exists on main; skipping"
           fi
 
-      # ----- upm branch: rebuild from main, force-push, tag upm/<version> -----
-      #
-      # Combined into the same workflow because GitHub Actions does not trigger downstream
-      # workflows from GITHUB_TOKEN pushes — splitting these into two workflows means the
-      # second one never fires automatically. Keeping it inline avoids needing a PAT.
+      # Keep upm steps in this workflow, since GITHUB_TOKEN pushes trigger no workflows
 
       - name: Rebuild upm branch
         run: |
@@ -74,24 +66,21 @@ jobs:
             exit 1
           fi
 
-          # Snapshot the package contents
           STAGE=$(mktemp -d)
           cp -a "$PKG/." "$STAGE/"
 
-          # Switch to a throwaway local branch so we don't mutate main locally
+          # Use a local branch to keep main untouched
           git checkout -B upm-build
 
           # Wipe everything in the work tree except .git
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
-          # Restore package contents at the repo root. README/CHANGELOG/LICENSE are NOT
-          # copied in — Package Manager UI links to the GitHub copies via the
-          # documentationUrl/changelogUrl/licensesUrl fields in package.json.
+          # Don't copy README/CHANGELOG/LICENSE, to avoid missing .meta warnings
           cp -a "$STAGE/." .
 
           rm -rf "$STAGE"
 
-          # UPM folder-name conventions
+          # Rename folders to UPM conventions
           if [ -d "Examples" ]; then
             mkdir -p "Samples~"
             mv "Examples" "Samples~/Examples"
@@ -102,7 +91,6 @@ jobs:
             rm -f "Docs.meta"
           fi
 
-          # Commit and force-push to upm
           git add -A
           git commit -m "Sync upm @ ${GITHUB_SHA:0:7}"
           git push -f origin HEAD:refs/heads/upm
@@ -114,18 +102,15 @@ jobs:
           set -euo pipefail
           UPM_TAG="upm/${NEW_VERSION}"
 
-          # Refuse to overwrite an existing upm/* tag — old releases must stay reachable
-          # via their original tag, even after the upm branch tip moves past them.
+          # Fail if upm tag exists to keep old releases reachable
           git fetch origin "refs/tags/${UPM_TAG}:refs/tags/${UPM_TAG}" 2>/dev/null || true
           if git rev-parse -q --verify "refs/tags/${UPM_TAG}" >/dev/null; then
-            echo "::error::${UPM_TAG} already exists — refusing to overwrite. Old releases must stay reachable."
+            echo "::error::${UPM_TAG} already exists, not overwriting"
             exit 1
           fi
 
           git tag "${UPM_TAG}"
           git push origin "refs/tags/${UPM_TAG}"
-
-      # ----- GitHub Release with auto-generated notes -----
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

@@ -56,16 +56,13 @@ namespace Plugins.Animate_UI_Materials
       _modifiers.Clear();
     }
 
-    // On enable, re-publish the cached override (if any) so mirrors pick it back up.
-    // On disable, clear it from the registry without destroying the buffer — leaving the
-    // material alive avoids leaving mirrors' CanvasRenderers holding a Unity-destroyed
-    // reference (which renders transparent until the next rebuild swaps it).
     void OnEnable()
     {
       RegisterOverride();
       SetMaterialDirty();
     }
 
+    // Don't destroy buffer on disable, since mirrors may still render it
     void OnDisable()
     {
       UnregisterOverride();

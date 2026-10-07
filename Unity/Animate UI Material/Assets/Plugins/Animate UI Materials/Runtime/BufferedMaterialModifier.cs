@@ -113,7 +113,6 @@ namespace Plugins.Animate_UI_Materials
 
     public void DestroyBuffer()
     {
-      // Notify subscribers that the override under our source key is going away.
       if (_bufferedMaterialSource) MaterialOverrideRegistry.Set(_bufferedMaterialSource, null);
 
       if (_bufferedMaterial)
@@ -126,9 +125,7 @@ namespace Plugins.Animate_UI_Materials
     }
 
     /// <summary>
-    /// Republish the current buffered material under its source key. Call this after re-enabling
-    /// a previously-disabled modifier so mirrors pick the override back up. No-op when no buffer
-    /// has been created yet — the next GetModifiedMaterial will register naturally.
+    /// Republish the buffered material to the registry
     /// </summary>
     protected void RegisterOverride()
     {
@@ -137,9 +134,7 @@ namespace Plugins.Animate_UI_Materials
     }
 
     /// <summary>
-    /// Clear the current override from the registry without destroying the buffered material.
-    /// Mirrors fall back to their base material on the next render. Cache survives so re-enabling
-    /// is cheap — just RegisterOverride() + SetMaterialDirty.
+    /// Clear the override but keep the buffered material
     /// </summary>
     protected void UnregisterOverride()
     {

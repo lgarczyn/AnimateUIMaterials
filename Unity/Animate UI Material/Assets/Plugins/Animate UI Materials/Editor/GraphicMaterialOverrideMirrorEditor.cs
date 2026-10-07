@@ -35,43 +35,33 @@ namespace Plugins.Animate_UI_Materials.Editor
         }
       }
 
-      // No publisher anywhere uses this material — Mirror has nothing to reflect.
       if (totalMatching == 0)
       {
         EditorGUILayout.HelpBox(
-          "No active GraphicMaterialOverride uses this material. " +
-          "The Mirror has nothing to reflect and will display the unmodified base material.",
+          "No active GraphicMaterialOverride uses this material. Showing the base material.",
           MessageType.Info);
         return;
       }
 
-      // A publisher exists, but at a different stencil-Mask depth. MaskableGraphic wraps the
-      // material per-depth via StencilMaterial.Add, producing distinct Material references for
-      // different depths, so the runtime lookup can never match. RectMask2D is unaffected since
-      // it clips at CanvasRenderer level without touching the material.
+      // Reject other Mask depths, since StencilMaterial.Add copies per depth
       if (sameDepthMatching == 0)
       {
         EditorGUILayout.HelpBox(
-          "The matching GraphicMaterialOverride is inside a different stencil Mask hierarchy. " +
-          "For the Mirror to share its material, both Graphics must be inside the same Mask, " +
-          "or both outside any Mask. RectMask2D doesn't have this restriction.",
+          "The matching GraphicMaterialOverride is under a different Mask. " +
+          "Put both under the same Mask, or neither. RectMask2D works either way.",
           MessageType.Error);
         return;
       }
 
-      // More than one same-depth publisher claims this material — runtime registry is
-      // last-writer-wins, so which one drives the Mirror is unpredictable.
       if (sameDepthMatching > 1)
       {
         EditorGUILayout.HelpBox(
-          "Multiple active GraphicMaterialOverride components share this material at this Mask depth. " +
-          "The Mirror reflects whichever one rendered most recently — assignment is unstable.",
+          "Several active GraphicMaterialOverride use this material at this Mask depth. " +
+          "The last one to render wins.",
           MessageType.Warning);
         return;
       }
 
-      // Exactly one same-depth publisher. Mirror should be reflecting it; show a clickable
-      // read-only object field so the user can ping/select it from the inspector.
       EditorGUI.BeginDisabledGroup(true);
       EditorGUILayout.ObjectField("Mirroring", solePublisher, typeof(GraphicMaterialOverride), true);
       EditorGUI.EndDisabledGroup();
